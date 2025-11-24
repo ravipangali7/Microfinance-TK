@@ -1,0 +1,94 @@
+{% extends 'core/layouts/base.html' %}
+
+{% block content %}
+<div class="container-fluid p-0">
+    <h1 class="h3 mb-3">Board Approval</h1>
+    
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{% if message.tags == 'error' %}danger{% elif message.tags == 'warning' %}warning{% else %}success{% endif %} alert-dismissible fade show" role="alert">
+                <strong>
+                    {% if message.tags == 'error' %}
+                        <i class="align-middle me-1" data-feather="alert-circle"></i>
+                    {% elif message.tags == 'warning' %}
+                        <i class="align-middle me-1" data-feather="alert-triangle"></i>
+                    {% else %}
+                        <i class="align-middle me-1" data-feather="check-circle"></i>
+                    {% endif %}
+                </strong>
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        {% endfor %}
+    {% endif %}
+    
+    <!-- Pending Loans Section -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="align-middle me-1" data-feather="credit-card"></i>
+                        Pending Loans ({{ pending_loans.count }})
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if pending_loans %}
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>User</th>
+                                        <th>Principal Amount</th>
+                                        <th>Total Payable</th>
+                                        <th>Interest Rate</th>
+                                        <th>Timeline (Months)</th>
+                                        <th>Applied Date</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for loan in pending_loans %}
+                                    <tr>
+                                        <td>#{{ loan.id }}</td>
+                                        <td>{{ loan.user.name }} ({{ loan.user.phone }})</td>
+                                        <td>Rs. {{ loan.principal_amount|floatformat:2 }}</td>
+                                        <td>Rs. {{ loan.total_payable|floatformat:2 }}</td>
+                                        <td>{{ loan.interest_rate }}%</td>
+                                        <td>{{ loan.timeline }}</td>
+                                        <td>{{ loan.applied_date }}</td>
+                                        <td>
+                                            <form method="post" action="{% url 'approve_loan' loan.pk %}" style="display: inline;">
+                                                {% csrf_token %}
+                                                <button type="submit" class="btn btn-sm btn-success" title="Approve">
+                                                    <i class="align-middle" data-feather="check"></i> Approve
+                                                </button>
+                                            </form>
+                                            <form method="post" action="{% url 'reject_loan' loan.pk %}" style="display: inline;">
+                                                {% csrf_token %}
+                                                <button type="submit" class="btn btn-sm btn-danger" title="Reject" onclick="return confirm('Are you sure you want to reject this loan?');">
+                                                    <i class="align-middle" data-feather="x"></i> Reject
+                                                </button>
+                                            </form>
+                                            <a href="{% url 'loan_view' loan.pk %}" class="btn btn-sm btn-info" title="View Details">
+                                                <i class="align-middle" data-feather="eye"></i>
+                                            </a>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="alert alert-info">
+                            <i class="align-middle me-1" data-feather="info"></i>
+                            No pending loans at this time.
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

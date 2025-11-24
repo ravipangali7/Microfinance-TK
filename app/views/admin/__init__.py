@@ -1,0 +1,58 @@
+# Admin views package
+from .auth_views import login_view, logout_view
+from .dashboard_views import dashboard_view
+from .user_views import (
+    user_list, user_create, user_update, user_delete, user_view,
+    assign_membership_to_user, remove_membership_from_user
+)
+from .membership_views import (
+    membership_list, membership_create, membership_update,
+    membership_delete, membership_view,
+    assign_user_to_membership, remove_user_from_membership
+)
+from .membership_user_views import (
+    membership_user_list, membership_user_create, membership_user_update,
+    membership_user_delete, membership_user_view
+)
+from .monthly_membership_deposit_views import (
+    monthly_membership_deposit_list, monthly_membership_deposit_create,
+    monthly_membership_deposit_update, monthly_membership_deposit_delete,
+    monthly_membership_deposit_view, get_user_memberships
+)
+from .loan_views import (
+    loan_list, loan_create, loan_update, loan_delete, loan_view
+)
+from .loan_interest_payment_views import (
+    loan_interest_payment_list, loan_interest_payment_create,
+    loan_interest_payment_update, loan_interest_payment_delete,
+    loan_interest_payment_view, get_loan_interest_amount
+)
+from .organizational_withdrawal_views import (
+    organizational_withdrawal_list, organizational_withdrawal_create,
+    organizational_withdrawal_update, organizational_withdrawal_delete,
+    organizational_withdrawal_view
+)
+from .mysetting_views import (
+    mysetting_view, mysetting_update
+)
+from .board_approval_views import (
+    board_approval_view, approve_loan, reject_loan,
+    update_loan_status
+)
+
+__all__ = [
+    'login_view', 'logout_view',
+    'dashboard_view',
+    'user_list', 'user_create', 'user_update', 'user_delete', 'user_view',
+    'assign_membership_to_user', 'remove_membership_from_user',
+    'membership_list', 'membership_create', 'membership_update', 'membership_delete', 'membership_view',
+    'assign_user_to_membership', 'remove_user_from_membership',
+    'membership_user_list', 'membership_user_create', 'membership_user_update', 'membership_user_delete', 'membership_user_view',
+    'monthly_membership_deposit_list', 'monthly_membership_deposit_create', 'monthly_membership_deposit_update', 'monthly_membership_deposit_delete', 'monthly_membership_deposit_view', 'get_user_memberships',
+    'loan_list', 'loan_create', 'loan_update', 'loan_delete', 'loan_view',
+    'loan_interest_payment_list', 'loan_interest_payment_create', 'loan_interest_payment_update', 'loan_interest_payment_delete', 'loan_interest_payment_view', 'get_loan_interest_amount',
+    'organizational_withdrawal_list', 'organizational_withdrawal_create', 'organizational_withdrawal_update', 'organizational_withdrawal_delete', 'organizational_withdrawal_view',
+    'mysetting_view', 'mysetting_update',
+    'board_approval_view', 'approve_loan', 'reject_loan', 'update_loan_status',
+]
+

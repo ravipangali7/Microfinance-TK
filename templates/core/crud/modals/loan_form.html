@@ -1,0 +1,122 @@
+<div class="modal fade" id="loanModalContainerModal" tabindex="-1" aria-labelledby="loanModalLabel" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="loanModalLabel">
+                    {% if action == 'create' %}Create Loan{% else %}Edit Loan{% endif %}
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="loanForm" class="ajax-form" method="post" action="{% if action == 'create' %}{% url 'loan_create' %}{% else %}{% url 'loan_update' obj.pk %}{% endif %}" data-success-url="{% url 'loan_list' %}">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">User *</label>
+                            {{ form.user }}
+                            {% if form.user.errors %}
+                                <div class="text-danger">{{ form.user.errors }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Applied Date *</label>
+                            {{ form.applied_date }}
+                            {% if form.applied_date.errors %}
+                                <div class="text-danger">{{ form.applied_date.errors }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Principal Amount *</label>
+                            {{ form.principal_amount }}
+                            {% if form.principal_amount.errors %}
+                                <div class="text-danger">{{ form.principal_amount.errors }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Timeline (Months) *</label>
+                            {{ form.timeline }}
+                            {% if form.timeline.errors %}
+                                <div class="text-danger">{{ form.timeline.errors }}</div>
+                            {% endif %}
+                            <small class="form-text text-muted">Default from system settings</small>
+                        </div>
+                    </div>
+                    {% if action == 'edit' %}
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Interest Rate (%)</label>
+                            {{ form.interest_rate }}
+                            {% if form.interest_rate.errors %}
+                                <div class="text-danger">{{ form.interest_rate.errors }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Total Payable</label>
+                            {{ form.total_payable }}
+                            {% if form.total_payable.errors %}
+                                <div class="text-danger">{{ form.total_payable.errors }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Status</label>
+                            {{ form.status }}
+                            {% if form.status.errors %}
+                                <div class="text-danger">{{ form.status.errors }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Paid Principle Amount</label>
+                            {{ form.paid_principle_amount }}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Due Principle Amount</label>
+                            {{ form.due_principle_amount }}
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Action By</label>
+                            {{ form.action_by }}
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Approved Date</label>
+                            {{ form.approved_date }}
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Disbursed Date</label>
+                            {{ form.disbursed_date }}
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Completed Date</label>
+                            {{ form.completed_date }}
+                        </div>
+                    </div>
+                    {% endif %}
+                    <div class="alert alert-info">
+                        <i class="align-middle me-1" data-feather="info"></i>
+                        <strong>Note:</strong> Interest rate and total payable will be automatically calculated based on system settings.
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="submit" class="btn btn-primary">Save</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const modalElement = document.getElementById('loanModalContainerModal');
+    if (modalElement) {
+        const modal = new bootstrap.Modal(modalElement);
+        modal.show();
+    }
+});
+</script>

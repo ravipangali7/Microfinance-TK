@@ -1,0 +1,125 @@
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from rest_framework import status
+from django.shortcuts import get_object_or_404
+from app.models import LoanInterestPayment, Loan
+from app.serializers import LoanInterestPaymentSerializer
+from app.views.admin.helpers import is_admin_board_or_staff, is_member
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def loan_interest_payment_list_api(request):
+    """List loan interest payments with role-based filtering"""
+    loan_id = request.query_params.get('loan_id', None)
+    
+    if loan_id:
+        # Filter by loan
+        loan = get_object_or_404(Loan, pk=loan_id)
+        # Check access
+        if is_member(request.user) and loan.user.id != request.user.id:
+            return Response(
+                {'error': 'Access denied. You can only view your own loan payments.'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        payments = LoanInterestPayment.objects.filter(loan=loan).select_related('loan').order_by('-paid_date', '-created_at')
+    elif is_member(request.user):
+        # Members can only see payments for their own loans
+        payments = LoanInterestPayment.objects.filter(loan__user=request.user).select_related('loan').order_by('-paid_date', '-created_at')
+    else:
+        # Admin/Board/Staff can see all payments
+        payments = LoanInterestPayment.objects.all().select_related('loan').order_by('-paid_date', '-created_at')
+    
+    serializer = LoanInterestPaymentSerializer(payments, many=True)
+    return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def loan_interest_payment_create_api(request):
+    """Create a new loan interest payment"""
+    # Members can create interest payments for their own loans, Admin/Board/Staff can create any
+    data = request.data.copy()
+    loan_id = data.get('loan_id')
+    
+    if not loan_id:
+        return Response(
+            {'error': 'loan_id is required.'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+    
+    loan = get_object_or_404(Loan, pk=loan_id)
+    
+    if is_member(request.user):
+        # Members can only create payments for their own loans
+        if loan.user.id != request.user.id:
+            return Response(
+                {'error': 'You can only create interest payments for your own loans.'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        # Ensure loan is active or approved
+        if loan.status not in ['approved', 'active']:
+            return Response(
+                {'error': 'Interest payments can only be made for approved or active loans.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+    
+    serializer = LoanInterestPaymentSerializer(data=data)
+    if serializer.is_valid():
+        payment = serializer.save()
+        return Response(LoanInterestPaymentSerializer(payment).data, status=status.HTTP_201_CREATED)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def loan_interest_payment_detail_api(request, pk):
+    """Get loan interest payment details"""
+    payment = get_object_or_404(LoanInterestPayment, pk=pk)
+    
+    # Members can only see payments for their own loans
+    if is_member(request.user) and payment.loan.user.id != request.user.id:
+        return Response(
+            {'error': 'Access denied. You can only view your own loan payments.'},
+            status=status.HTTP_403_FORBIDDEN
+        )
+    
+    serializer = LoanInterestPaymentSerializer(payment)
+    return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+@api_view(['PUT', 'PATCH'])
+@permission_classes([IsAuthenticated])
+def loan_interest_payment_update_api(request, pk):
+    """Update loan interest payment"""
+    # Only Admin/Board/Staff can update interest payments
+    if not is_admin_board_or_staff(request.user):
+        return Response(
+            {'error': 'Access denied. Only Admin, Board, and Staff can update interest payments.'},
+            status=status.HTTP_403_FORBIDDEN
+        )
+    
+    payment = get_object_or_404(LoanInterestPayment, pk=pk)
+    serializer = LoanInterestPaymentSerializer(payment, data=request.data, partial=True)
+    if serializer.is_valid():
+        payment = serializer.save()
+        return Response(LoanInterestPaymentSerializer(payment).data, status=status.HTTP_200_OK)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(['DELETE'])
+@permission_classes([IsAuthenticated])
+def loan_interest_payment_delete_api(request, pk):
+    """Delete loan interest payment"""
+    # Only Admin/Board/Staff can delete interest payments
+    if not is_admin_board_or_staff(request.user):
+        return Response(
+            {'error': 'Access denied. Only Admin, Board, and Staff can delete interest payments.'},
+            status=status.HTTP_403_FORBIDDEN
+        )
+    
+    payment = get_object_or_404(LoanInterestPayment, pk=pk)
+    payment.delete()
+    return Response({'message': 'Loan interest payment deleted successfully'}, status=status.HTTP_200_OK)
+

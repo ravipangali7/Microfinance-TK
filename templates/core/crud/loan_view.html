@@ -1,0 +1,245 @@
+{% extends 'core/layouts/base.html' %}
+
+{% block content %}
+<div class="container-fluid p-0">
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0">
+                <i class="align-middle me-2" data-feather="dollar-sign"></i>
+                Loan Details
+            </h1>
+        </div>
+        <div>
+            {% if not has_payments %}
+            <a href="{% url 'loan_update' obj.pk %}" class="btn btn-primary">
+                <i class="align-middle me-1" data-feather="edit-2"></i> Edit Loan
+            </a>
+            {% endif %}
+            <a href="{% url 'loan_list' %}" class="btn btn-secondary">
+                <i class="align-middle me-1" data-feather="arrow-left"></i> Back to List
+            </a>
+        </div>
+    </div>
+    
+    <!-- Main Information Card -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="align-middle me-2" data-feather="info"></i>
+                        Loan Information
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <!-- Borrower Information -->
+                        <div class="col-lg-6 mb-4">
+                            <h6 class="text-muted text-uppercase mb-3">
+                                <i class="align-middle me-1" data-feather="user"></i>
+                                Borrower Information
+                            </h6>
+                            <dl class="row mb-0">
+                                <dt class="col-sm-4 mb-2">User</dt>
+                                <dd class="col-sm-8 mb-2">
+                                    <strong>{{ obj.user.name }}</strong><br>
+                                    <small class="text-muted">
+                                        <i class="align-middle me-1" data-feather="phone"></i> {{ obj.user.phone }}
+                                    </small>
+                                </dd>
+                                
+                                <dt class="col-sm-4 mb-2">
+                                    <i class="align-middle me-1" data-feather="calendar"></i> Applied Date
+                                </dt>
+                                <dd class="col-sm-8 mb-2">{{ obj.applied_date|date:"F d, Y" }}</dd>
+                                
+                                <dt class="col-sm-4 mb-2">Status</dt>
+                                <dd class="col-sm-8 mb-2">
+                                    <span class="badge bg-{% if obj.status == 'active' %}success{% elif obj.status == 'pending' %}warning{% elif obj.status == 'approved' %}info{% elif obj.status == 'completed' %}primary{% else %}secondary{% endif %} fs-6">
+                                        <i class="align-middle me-1" data-feather="{% if obj.status == 'active' %}check-circle{% elif obj.status == 'pending' %}clock{% elif obj.status == 'approved' %}check{% elif obj.status == 'completed' %}check-circle{% else %}x-circle{% endif %}"></i>
+                                        {{ obj.get_status_display }}
+                                    </span>
+                                </dd>
+                                
+                                <dt class="col-sm-4 mb-2">Action By</dt>
+                                <dd class="col-sm-8 mb-2">{{ obj.action_by.name|default:"<span class='text-muted'>N/A</span>" }}</dd>
+                            </dl>
+                        </div>
+                        
+                        <!-- Financial Details -->
+                        <div class="col-lg-6 mb-4">
+                            <h6 class="text-muted text-uppercase mb-3">
+                                <i class="align-middle me-1" data-feather="dollar-sign"></i>
+                                Financial Details
+                            </h6>
+                            <dl class="row mb-0">
+                                <dt class="col-sm-5 mb-2">Principal Amount</dt>
+                                <dd class="col-sm-7 mb-2">
+                                    <span class="fs-5 fw-bold text-primary">Rs. {{ obj.principal_amount|floatformat:2 }}</span>
+                                </dd>
+                                
+                                <dt class="col-sm-5 mb-2">Interest Rate</dt>
+                                <dd class="col-sm-7 mb-2">
+                                    <span class="badge bg-info">{{ obj.interest_rate }}%</span>
+                                </dd>
+                                
+                                <dt class="col-sm-5 mb-2">Total Payable</dt>
+                                <dd class="col-sm-7 mb-2">
+                                    <span class="fw-bold">Rs. {{ obj.total_payable|floatformat:2 }}</span>
+                                </dd>
+                                
+                                <dt class="col-sm-5 mb-2">Timeline</dt>
+                                <dd class="col-sm-7 mb-2">{{ obj.timeline }} months</dd>
+                                
+                                <dt class="col-sm-5 mb-2">Paid Principal</dt>
+                                <dd class="col-sm-7 mb-2">
+                                    <span class="text-success fw-bold">Rs. {{ obj.paid_principle_amount|floatformat:2 }}</span>
+                                </dd>
+                                
+                                <dt class="col-sm-5 mb-2">Due Principal</dt>
+                                <dd class="col-sm-7 mb-2">
+                                    <span class="text-warning fw-bold">Rs. {{ obj.due_principle_amount|floatformat:2 }}</span>
+                                </dd>
+                            </dl>
+                        </div>
+                        
+                        <!-- Timeline Information -->
+                        <div class="col-lg-6 mb-4">
+                            <h6 class="text-muted text-uppercase mb-3">
+                                <i class="align-middle me-1" data-feather="calendar"></i>
+                                Timeline
+                            </h6>
+                            <dl class="row mb-0">
+                                <dt class="col-sm-4 mb-2">Approved Date</dt>
+                                <dd class="col-sm-8 mb-2">
+                                    {% if obj.approved_date %}
+                                        <i class="align-middle me-1" data-feather="check"></i> {{ obj.approved_date|date:"F d, Y" }}
+                                    {% else %}
+                                        <span class="text-muted">Not approved yet</span>
+                                    {% endif %}
+                                </dd>
+                                
+                                <dt class="col-sm-4 mb-2">Disbursed Date</dt>
+                                <dd class="col-sm-8 mb-2">
+                                    {% if obj.disbursed_date %}
+                                        <i class="align-middle me-1" data-feather="send"></i> {{ obj.disbursed_date|date:"F d, Y" }}
+                                    {% else %}
+                                        <span class="text-muted">Not disbursed yet</span>
+                                    {% endif %}
+                                </dd>
+                                
+                                <dt class="col-sm-4 mb-2">Completed Date</dt>
+                                <dd class="col-sm-8 mb-2">
+                                    {% if obj.completed_date %}
+                                        <i class="align-middle me-1" data-feather="check-circle"></i> {{ obj.completed_date|date:"F d, Y" }}
+                                    {% else %}
+                                        <span class="text-muted">Not completed yet</span>
+                                    {% endif %}
+                                </dd>
+                            </dl>
+                        </div>
+                        
+                        <!-- System Information -->
+                        <div class="col-lg-6 mb-4">
+                            <h6 class="text-muted text-uppercase mb-3">
+                                <i class="align-middle me-1" data-feather="clock"></i>
+                                System Information
+                            </h6>
+                            <dl class="row mb-0">
+                                <dt class="col-sm-4 mb-2">Created At</dt>
+                                <dd class="col-sm-8 mb-2">{{ obj.created_at|date:"F d, Y h:i A" }}</dd>
+                                
+                                <dt class="col-sm-4 mb-2">Updated At</dt>
+                                <dd class="col-sm-8 mb-2">{{ obj.updated_at|date:"F d, Y h:i A" }}</dd>
+                            </dl>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Loan Interest Payments Section -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="align-middle me-2" data-feather="calendar"></i>
+                        Loan Interest Payments
+                        <span class="badge bg-primary ms-2">{{ interest_payments|length }}</span>
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if interest_payments %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>#</th>
+                                        <th>
+                                            <i class="align-middle me-1" data-feather="dollar-sign"></i> Amount
+                                        </th>
+                                        <th>Payment Status</th>
+                                        <th>
+                                            <i class="align-middle me-1" data-feather="calendar"></i> Paid Date
+                                        </th>
+                                        <th class="text-end">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for payment in interest_payments %}
+                                    <tr>
+                                        <td><strong>{{ forloop.counter }}</strong></td>
+                                        <td>
+                                            <span class="fw-bold text-primary">Rs. {{ payment.amount|floatformat:2 }}</span>
+                                        </td>
+                                        <td>
+                                            {% if payment.payment_status == 'paid' %}
+                                                <span class="badge bg-success">
+                                                    <i class="align-middle me-1" data-feather="check-circle"></i> Paid
+                                                </span>
+                                            {% else %}
+                                                <span class="badge bg-warning">
+                                                    <i class="align-middle me-1" data-feather="clock"></i> Pending
+                                                </span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if payment.paid_date %}
+                                                {{ payment.paid_date|date:"M d, Y" }}
+                                            {% else %}
+                                                <span class="text-muted">-</span>
+                                            {% endif %}
+                                        </td>
+                                        <td class="text-end">
+                                            <a href="{% url 'loan_interest_payment_view' payment.pk %}" class="btn btn-sm btn-outline-info" title="View">
+                                                <i class="align-middle" data-feather="eye"></i> View
+                                            </a>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="alert alert-info mb-0">
+                            <i class="align-middle me-2" data-feather="info"></i>
+                            No interest payments found for this loan.
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    if (typeof feather !== 'undefined') {
+        feather.replace();
+    }
+</script>
+{% endblock %}

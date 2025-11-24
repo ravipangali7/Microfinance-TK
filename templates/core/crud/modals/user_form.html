@@ -1,0 +1,119 @@
+<div class="modal fade" id="userModalContainerModal" tabindex="-1" aria-labelledby="userModalLabel" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="userModalLabel">
+                    {% if action == 'create' %}Create User{% else %}Edit User{% endif %}
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="userForm" class="ajax-form" method="post" action="{% if action == 'create' %}{% url 'user_create' %}{% else %}{% url 'user_update' user.pk %}{% endif %}" data-success-url="{% url 'user_list' %}">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Phone *</label>
+                            {{ form.phone }}
+                            {% if form.phone.errors %}
+                                <div class="text-danger">{{ form.phone.errors }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Name *</label>
+                            {{ form.name }}
+                            {% if form.name.errors %}
+                                <div class="text-danger">{{ form.name.errors }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Email</label>
+                            {{ form.email }}
+                            {% if form.email.errors %}
+                                <div class="text-danger">{{ form.email.errors }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Password {% if action == 'edit' %}(leave blank to keep current){% endif %}</label>
+                            {{ form.password }}
+                            {% if form.password.errors %}
+                                <div class="text-danger">{{ form.password.errors }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Gender</label>
+                            {{ form.gender }}
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Date of Birth</label>
+                            {{ form.date_of_birth }}
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Status</label>
+                            {{ form.status }}
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Address</label>
+                        {{ form.address }}
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">National ID</label>
+                            {{ form.national_id }}
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label">Country Code</label>
+                            {{ form.country_code }}
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label">Country</label>
+                            {{ form.country }}
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Joined Date</label>
+                            {{ form.joined_date }}
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Balance</label>
+                            {{ form.balance }}
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <div class="form-check mt-4">
+                                {{ form.is_staff }}
+                                <label class="form-check-label">Staff</label>
+                            </div>
+                            <div class="form-check">
+                                {{ form.is_superuser }}
+                                <label class="form-check-label">Superuser</label>
+                            </div>
+                            <div class="form-check">
+                                {{ form.is_active }}
+                                <label class="form-check-label">Active</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="submit" class="btn btn-primary">Save</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const modalElement = document.getElementById('userModalContainerModal');
+    if (modalElement) {
+        const modal = new bootstrap.Modal(modalElement);
+        modal.show();
+    }
+});
+</script>
+

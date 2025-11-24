@@ -1,0 +1,70 @@
+{% extends 'core/layouts/base.html' %}
+
+{% block content %}
+<div class="container-fluid p-0">
+    <h1 class="h3 mb-3">Edit System Settings</h1>
+    
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Settings Information</h5>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Membership Deposit Date (Day of Month) *</label>
+                                {{ form.membership_deposit_date }}
+                                {% if form.membership_deposit_date.errors %}
+                                    <div class="text-danger">{{ form.membership_deposit_date.errors }}</div>
+                                {% endif %}
+                                <small class="form-text text-muted">Enter a day between 1-31</small>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Loan Interest Payment Date (Day of Month) *</label>
+                                {{ form.loan_interest_payment_date }}
+                                {% if form.loan_interest_payment_date.errors %}
+                                    <div class="text-danger">{{ form.loan_interest_payment_date.errors }}</div>
+                                {% endif %}
+                                <small class="form-text text-muted">Enter a day between 1-31</small>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Loan Interest Rate (%) *</label>
+                                {{ form.loan_interest_rate }}
+                                {% if form.loan_interest_rate.errors %}
+                                    <div class="text-danger">{{ form.loan_interest_rate.errors }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Loan Timeline (Months) *</label>
+                                {{ form.loan_timeline }}
+                                {% if form.loan_timeline.errors %}
+                                    <div class="text-danger">{{ form.loan_timeline.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">System Balance *</label>
+                                {{ form.balance }}
+                                {% if form.balance.errors %}
+                                    <div class="text-danger">{{ form.balance.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="mt-3">
+                            <button type="submit" class="btn btn-primary">Update Settings</button>
+                            <a href="{% url 'mysetting_view' %}" class="btn btn-secondary">Cancel</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

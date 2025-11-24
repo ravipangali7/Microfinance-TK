@@ -1,0 +1,48 @@
+{% extends 'core/crud/base_list.html' %}
+
+{% block page_title %}Memberships{% endblock %}
+
+{% block add_button %}
+{% if is_admin %}
+<a href="{% url 'membership_create' %}" class="btn btn-primary ms-2">
+    <i class="align-middle" data-feather="plus"></i> Add New Membership
+</a>
+{% endif %}
+{% endblock %}
+
+{% block table_header %}
+<tr>
+    <th>Name</th>
+    <th>Amount</th>
+    <th>Created At</th>
+    <th>Actions</th>
+</tr>
+{% endblock %}
+
+{% block table_body %}
+{% for membership in memberships %}
+<tr>
+    <td>{{ membership.name }}</td>
+    <td>Rs. {{ membership.amount|floatformat:2 }}</td>
+    <td>{{ membership.created_at|date:"Y-m-d" }}</td>
+    <td>
+        <a href="{% url 'membership_view' membership.pk %}" class="btn btn-sm btn-info" title="View">
+            <i class="align-middle" data-feather="eye"></i>
+        </a>
+        {% if is_admin %}
+        <a href="{% url 'membership_update' membership.pk %}" class="btn btn-sm btn-primary" title="Edit">
+            <i class="align-middle" data-feather="edit"></i>
+        </a>
+        <button class="btn btn-sm btn-danger" onclick="deleteItem('{% url 'membership_delete' membership.pk %}', '{{ membership.name }}')" title="Delete">
+            <i class="align-middle" data-feather="trash-2"></i>
+        </button>
+        {% endif %}
+    </td>
+</tr>
+{% empty %}
+<tr>
+    <td colspan="4" class="text-center text-muted">No memberships found</td>
+</tr>
+{% endfor %}
+{% endblock %}
+

@@ -1,0 +1,88 @@
+<nav id="sidebar" class="sidebar js-sidebar">
+    <div class="sidebar-content js-simplebar">
+        <a class="sidebar-brand" href="{% url 'dashboard' %}">
+            <span class="align-middle">Microfinance System</span>
+        </a>
+
+        <ul class="sidebar-nav">
+            <li class="sidebar-header">
+                Main Menu
+            </li>
+
+            <li class="sidebar-item">
+                <a class="sidebar-link" href="{% url 'dashboard' %}">
+                    <i class="align-middle" data-feather="sliders"></i> <span
+                        class="align-middle">Dashboard</span>
+                </a>
+            </li>
+
+            {% if is_admin_or_board %}
+            <li class="sidebar-item">
+                <a class="sidebar-link" href="{% url 'user_list' %}">
+                    <i class="align-middle" data-feather="users"></i> <span class="align-middle">Users</span>
+                </a>
+            </li>
+            {% endif %}
+
+            <li class="sidebar-item">
+                <a class="sidebar-link" href="{% url 'membership_list' %}">
+                    <i class="align-middle" data-feather="users"></i> <span class="align-middle">Memberships</span>
+                </a>
+            </li>
+
+            <li class="sidebar-item">
+                <a class="sidebar-link" href="{% url 'monthly_membership_deposit_list' %}">
+                    <i class="align-middle" data-feather="dollar-sign"></i> <span class="align-middle">Membership Deposits</span>
+                </a>
+            </li>
+
+            <li class="sidebar-item">
+                <a class="sidebar-link" href="{% url 'loan_list' %}">
+                    <i class="align-middle" data-feather="credit-card"></i> <span class="align-middle">Loans</span>
+                </a>
+            </li>
+
+            <li class="sidebar-item">
+                <a class="sidebar-link" href="{% url 'loan_interest_payment_list' %}">
+                    <i class="align-middle" data-feather="file-text"></i> <span class="align-middle">Interest Payments</span>
+                </a>
+            </li>
+
+            <li class="sidebar-item">
+                <a class="sidebar-link" href="{% url 'organizational_withdrawal_list' %}">
+                    <i class="align-middle" data-feather="download"></i> <span class="align-middle">Withdrawals</span>
+                </a>
+            </li>
+
+            {% if is_admin_or_board %}
+            <li class="sidebar-item">
+                <a class="sidebar-link" href="{% url 'board_approval' %}">
+                    <i class="align-middle" data-feather="check-circle"></i> <span class="align-middle">Board Approval</span>
+                </a>
+            </li>
+            {% endif %}
+
+            <li class="sidebar-header">
+                Configuration
+            </li>
+
+            <li class="sidebar-item">
+                <a class="sidebar-link" href="{% url 'mysetting_view' %}">
+                    <i class="align-middle" data-feather="settings"></i> <span class="align-middle">Settings</span>
+                </a>
+            </li>
+
+            {% if is_admin %}
+            <li class="sidebar-header">
+                System
+            </li>
+
+            <li class="sidebar-item">
+                <a class="sidebar-link" href="/admin/">
+                    <i class="align-middle" data-feather="grid"></i> <span class="align-middle">Admin Panel</span>
+                </a>
+            </li>
+            {% endif %}
+        </ul>
+    </div>
+</nav>

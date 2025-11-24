@@ -1,0 +1,58 @@
+{% extends 'core/crud/base_list.html' %}
+
+{% block page_title %}Organizational Withdrawals{% endblock %}
+
+{% block add_button %}
+{% if is_admin_or_board %}
+<a href="{% url 'organizational_withdrawal_create' %}" class="btn btn-primary ms-2">
+    <i class="align-middle" data-feather="plus"></i> Add New Withdrawal
+</a>
+{% endif %}
+{% endblock %}
+
+{% block table_header %}
+<tr>
+    <th>Amount</th>
+    <th>Date</th>
+    <th>Status</th>
+    <th>Purpose</th>
+    <th>Actions</th>
+</tr>
+{% endblock %}
+
+{% block table_body %}
+{% for withdrawal in withdrawals %}
+<tr>
+    <td>Rs. {{ withdrawal.amount|floatformat:2 }}</td>
+    <td>{{ withdrawal.date }}</td>
+    <td>
+        {% if withdrawal.status == 'approved' %}
+            <span class="badge bg-success">Approved</span>
+        {% elif withdrawal.status == 'rejected' %}
+            <span class="badge bg-danger">Rejected</span>
+        {% else %}
+            <span class="badge bg-warning">Pending</span>
+        {% endif %}
+    </td>
+    <td>{{ withdrawal.purpose|truncatewords:10 }}</td>
+    <td>
+        <a href="{% url 'organizational_withdrawal_view' withdrawal.pk %}" class="btn btn-sm btn-info" title="View">
+            <i class="align-middle" data-feather="eye"></i>
+        </a>
+        {% if is_admin_or_board %}
+        <a href="{% url 'organizational_withdrawal_update' withdrawal.pk %}" class="btn btn-sm btn-primary" title="Edit">
+            <i class="align-middle" data-feather="edit"></i>
+        </a>
+        <button class="btn btn-sm btn-danger" onclick="deleteItem('{% url 'organizational_withdrawal_delete' withdrawal.pk %}', 'Rs. {{ withdrawal.amount }}')" title="Delete">
+            <i class="align-middle" data-feather="trash-2"></i>
+        </button>
+        {% endif %}
+    </td>
+</tr>
+{% empty %}
+<tr>
+    <td colspan="5" class="text-center text-muted">No withdrawals found</td>
+</tr>
+{% endfor %}
+{% endblock %}
+

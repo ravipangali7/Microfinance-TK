@@ -1,0 +1,113 @@
+{% extends 'core/layouts/base.html' %}
+
+{% block content %}
+<div class="container-fluid p-0">
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0">
+                <i class="align-middle me-2" data-feather="link"></i>
+                Membership User Details
+            </h1>
+        </div>
+        <div>
+            {% if is_admin %}
+            <a href="{% url 'membership_user_update' obj.pk %}" class="btn btn-primary">
+                <i class="align-middle me-1" data-feather="edit-2"></i> Edit
+            </a>
+            {% endif %}
+            <a href="{% url 'membership_user_list' %}" class="btn btn-secondary">
+                <i class="align-middle me-1" data-feather="arrow-left"></i> Back to List
+            </a>
+        </div>
+    </div>
+    
+    <!-- Main Information Card -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="align-middle me-2" data-feather="info"></i>
+                        Membership User Information
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <!-- User Information -->
+                        <div class="col-lg-6 mb-4">
+                            <h6 class="text-muted text-uppercase mb-3">
+                                <i class="align-middle me-1" data-feather="user"></i>
+                                User Information
+                            </h6>
+                            <dl class="row mb-0">
+                                <dt class="col-sm-4 mb-2">Name</dt>
+                                <dd class="col-sm-8 mb-2">
+                                    <strong>{{ obj.user.name }}</strong><br>
+                                    <small class="text-muted">
+                                        <i class="align-middle me-1" data-feather="phone"></i> {{ obj.user.phone }}
+                                    </small>
+                                </dd>
+                                <dd class="col-sm-12 mt-2">
+                                    <a href="{% url 'user_view' obj.user.pk %}" class="btn btn-sm btn-outline-primary">
+                                        <i class="align-middle me-1" data-feather="eye"></i> View User Details
+                                    </a>
+                                </dd>
+                            </dl>
+                        </div>
+                        
+                        <!-- Membership Information -->
+                        <div class="col-lg-6 mb-4">
+                            <h6 class="text-muted text-uppercase mb-3">
+                                <i class="align-middle me-1" data-feather="tag"></i>
+                                Membership Information
+                            </h6>
+                            <dl class="row mb-0">
+                                <dt class="col-sm-4 mb-2">Name</dt>
+                                <dd class="col-sm-8 mb-2">
+                                    <strong>{{ obj.membership.name }}</strong>
+                                </dd>
+                                
+                                <dt class="col-sm-4 mb-2">
+                                    <i class="align-middle me-1" data-feather="dollar-sign"></i> Amount
+                                </dt>
+                                <dd class="col-sm-8 mb-2">
+                                    <span class="fs-5 fw-bold text-success">Rs. {{ obj.membership.amount|floatformat:2 }}</span>
+                                </dd>
+                                <dd class="col-sm-12 mt-2">
+                                    <a href="{% url 'membership_view' obj.membership.pk %}" class="btn btn-sm btn-outline-primary">
+                                        <i class="align-middle me-1" data-feather="eye"></i> View Membership Details
+                                    </a>
+                                </dd>
+                            </dl>
+                        </div>
+                        
+                        <!-- Timestamps -->
+                        <div class="col-lg-6 mb-4">
+                            <h6 class="text-muted text-uppercase mb-3">
+                                <i class="align-middle me-1" data-feather="clock"></i>
+                                Timestamps
+                            </h6>
+                            <dl class="row mb-0">
+                                <dt class="col-sm-4 mb-2">Created At</dt>
+                                <dd class="col-sm-8 mb-2">{{ obj.created_at|date:"F d, Y h:i A" }}</dd>
+                                
+                                <dt class="col-sm-4 mb-2">Updated At</dt>
+                                <dd class="col-sm-8 mb-2">{{ obj.updated_at|date:"F d, Y h:i A" }}</dd>
+                            </dl>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    if (typeof feather !== 'undefined') {
+        feather.replace();
+    }
+</script>
+{% endblock %}

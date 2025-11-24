@@ -1,0 +1,799 @@
+{% extends 'core/layouts/base.html' %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid p-0">
+
+    <h1 class="h3 mb-3"><strong>Microfinance</strong> Dashboard</h1>
+
+    <!-- Top Statistics Cards -->
+    <div class="row">
+        <div class="col-xl-6 col-xxl-5 d-flex">
+            <div class="w-100">
+                <div class="row">
+                    <div class="col-sm-6">
+                        {% if not is_member %}
+                        <div class="card">
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col mt-0">
+                                        <h5 class="card-title">Total Users</h5>
+                                    </div>
+                                    <div class="col-auto">
+                                        <div class="stat text-primary">
+                                            <i class="align-middle" data-feather="users"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                                <h1 class="mt-1 mb-3">{{ total_users }}</h1>
+                                <div class="mb-0">
+                                    <span class="text-success">
+                                        <i class="mdi mdi-arrow-bottom-right"></i> {{ active_users }} Active
+                                    </span>
+                                    <span class="text-muted">users</span>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                        <div class="card">
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col mt-0">
+                                        <h5 class="card-title">Total Membership Deposits</h5>
+                                    </div>
+                                    <div class="col-auto">
+                                        <div class="stat text-success">
+                                            <i class="align-middle" data-feather="dollar-sign"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                                <h1 class="mt-1 mb-3">Rs. {{ total_deposits_amount|floatformat:2 }}</h1>
+                                <div class="mb-0">
+                                    <span class="text-muted">{{ total_deposits_count }} deposits</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-sm-6">
+                        <div class="card">
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col mt-0">
+                                        <h5 class="card-title">Total Loans</h5>
+                                    </div>
+                                    <div class="col-auto">
+                                        <div class="stat text-warning">
+                                            <i class="align-middle" data-feather="credit-card"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                                <h1 class="mt-1 mb-3">{{ total_loans }}</h1>
+                                <div class="mb-0">
+                                    <span class="text-warning">
+                                        <i class="mdi mdi-arrow-bottom-right"></i> {{ loans_active }} Active
+                                    </span>
+                                    <span class="text-muted">loans</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card">
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col mt-0">
+                                        <h5 class="card-title">Total Balance</h5>
+                                    </div>
+                                    <div class="col-auto">
+                                        <div class="stat text-info">
+                                            <i class="align-middle" data-feather="wallet"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                                <h1 class="mt-1 mb-3">Rs. {{ total_balance|floatformat:2 }}</h1>
+                                <div class="mb-0">
+                                    <span class="text-muted">System Balance</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-6 col-xxl-7">
+            <div class="card flex-fill w-100">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Deposits & Loans Trend (Last 30 Days)</h5>
+                </div>
+                <div class="card-body py-3">
+                    <div class="chart chart-sm">
+                        <canvas id="chartjs-dashboard-line"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Secondary Statistics Cards -->
+    <div class="row">
+        <div class="col-sm-6 col-xl-3">
+            <div class="card">
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col mt-0">
+                            <h5 class="card-title">Pending Loans</h5>
+                        </div>
+                        <div class="col-auto">
+                            <div class="stat text-warning">
+                                <i class="align-middle" data-feather="clock"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <h1 class="mt-1 mb-3">{{ loans_pending }}</h1>
+                    <div class="mb-0">
+                        <span class="text-muted">Awaiting approval</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-xl-3">
+            <div class="card">
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col mt-0">
+                            <h5 class="card-title">Active Loans</h5>
+                        </div>
+                        <div class="col-auto">
+                            <div class="stat text-success">
+                                <i class="align-middle" data-feather="activity"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <h1 class="mt-1 mb-3">{{ loans_active }}</h1>
+                    <div class="mb-0">
+                        <span class="text-muted">Rs. {{ outstanding_loans_amount|floatformat:2 }} outstanding</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-xl-3">
+            <div class="card">
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col mt-0">
+                            <h5 class="card-title">Pending Withdrawals</h5>
+                        </div>
+                        <div class="col-auto">
+                            <div class="stat text-danger">
+                                <i class="align-middle" data-feather="download"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <h1 class="mt-1 mb-3">{{ withdrawals_pending }}</h1>
+                    <div class="mb-0">
+                        <span class="text-muted">Rs. {{ pending_withdrawals_amount|floatformat:2 }} pending</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-xl-3">
+            <div class="card">
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col mt-0">
+                            <h5 class="card-title">Pending Interest Payments</h5>
+                        </div>
+                        <div class="col-auto">
+                            <div class="stat text-warning">
+                                <i class="align-middle" data-feather="clock"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <h1 class="mt-1 mb-3">{{ interest_payments_pending }}</h1>
+                    <div class="mb-0">
+                        <span class="text-muted">Awaiting payment</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Section -->
+    <div class="row">
+        <div class="col-12 col-md-6 col-xxl-3 d-flex order-2 order-xxl-3">
+            <div class="card flex-fill w-100">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Loan Status Distribution</h5>
+                </div>
+                <div class="card-body d-flex">
+                    <div class="align-self-center w-100">
+                        <div class="py-3">
+                            <div class="chart chart-xs">
+                                <canvas id="chartjs-dashboard-pie"></canvas>
+                            </div>
+                        </div>
+                        <table class="table mb-0">
+                            <tbody>
+                                <tr>
+                                    <td>Pending</td>
+                                    <td class="text-end">{{ loans_pending }}</td>
+                                </tr>
+                                <tr>
+                                    <td>Active</td>
+                                    <td class="text-end">{{ loans_active }}</td>
+                                </tr>
+                                <tr>
+                                    <td>Completed</td>
+                                    <td class="text-end">{{ loans_completed }}</td>
+                                </tr>
+                                <tr>
+                                    <td>Default</td>
+                                    <td class="text-end">{{ loans_default }}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-12 col-md-12 col-xxl-6 d-flex order-3 order-xxl-2">
+            <div class="card flex-fill w-100">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Monthly Overview</h5>
+                </div>
+                <div class="card-body px-4">
+                    <div class="chart chart-lg">
+                        <canvas id="chartjs-dashboard-bar"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-12 col-md-6 col-xxl-3 d-flex order-1 order-xxl-1">
+            <div class="card flex-fill">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Quick Stats</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between">
+                            <span class="text-muted">Total Principal</span>
+                            <strong>Rs. {{ total_principal|floatformat:2 }}</strong>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between">
+                            <span class="text-muted">Total Payable</span>
+                            <strong>Rs. {{ total_payable|floatformat:2 }}</strong>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between">
+                            <span class="text-muted">Loans Disbursed</span>
+                            <strong>Rs. {{ loans_disbursed|floatformat:2 }}</strong>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between">
+                            <span class="text-muted">Total Paid Interest</span>
+                            <strong>Rs. {{ total_paid_interest|floatformat:2 }}</strong>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between">
+                            <span class="text-muted">Organizational Withdrawals</span>
+                            <strong>Rs. {{ total_withdrawals_amount|floatformat:2 }}</strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Activity Tables -->
+    <div class="row">
+        <div class="col-12 col-lg-6 col-xxl-6 d-flex">
+            <div class="card flex-fill">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Recent Deposits</h5>
+                </div>
+                <table class="table table-hover my-0">
+                    <thead>
+                        <tr>
+                            <th>User</th>
+                            <th>Membership</th>
+                            <th class="d-none d-xl-table-cell">Date</th>
+                            <th>Amount</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for deposit in recent_deposits %}
+                        <tr>
+                            <td>{{ deposit.user.name }}</td>
+                            <td>{{ deposit.membership.name }}</td>
+                            <td class="d-none d-xl-table-cell">{{ deposit.date }}</td>
+                            <td><span class="badge bg-success">Rs. {{ deposit.amount|floatformat:2 }}</span></td>
+                            <td>
+                                {% if deposit.payment_status == 'paid' %}
+                                    <span class="badge bg-success">Paid</span>
+                                {% else %}
+                                    <span class="badge bg-warning">Pending</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="5" class="text-center text-muted">No deposits yet</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="col-12 col-lg-6 col-xxl-6 d-flex">
+            <div class="card flex-fill">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Recent Loans</h5>
+                </div>
+                <table class="table table-hover my-0">
+                    <thead>
+                        <tr>
+                            <th>User</th>
+                            <th>Timeline</th>
+                            <th class="d-none d-xl-table-cell">Date</th>
+                            <th>Amount</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for loan in recent_loans %}
+                        <tr>
+                            <td>{{ loan.user.name }}</td>
+                            <td>{{ loan.timeline }} months</td>
+                            <td class="d-none d-xl-table-cell">{{ loan.applied_date }}</td>
+                            <td>Rs. {{ loan.principal_amount|floatformat:2 }}</td>
+                            <td>
+                                {% if is_admin_or_board %}
+                                    <select class="form-select form-select-sm loan-status-select" data-loan-id="{{ loan.pk }}" style="min-width: 120px;">
+                                        <option value="pending" {% if loan.status == 'pending' %}selected{% endif %}>Pending</option>
+                                        <option value="approved" {% if loan.status == 'approved' %}selected{% endif %}>Approved</option>
+                                        <option value="rejected" {% if loan.status == 'rejected' %}selected{% endif %}>Rejected</option>
+                                        <option value="active" {% if loan.status == 'active' %}selected{% endif %}>Active</option>
+                                        <option value="completed" {% if loan.status == 'completed' %}selected{% endif %}>Completed</option>
+                                        <option value="default" {% if loan.status == 'default' %}selected{% endif %}>Default</option>
+                                    </select>
+                                {% else %}
+                                    {% if loan.status == 'pending' %}
+                                        <span class="badge bg-warning">Pending</span>
+                                    {% elif loan.status == 'approved' %}
+                                        <span class="badge bg-info">Approved</span>
+                                    {% elif loan.status == 'active' %}
+                                        <span class="badge bg-success">Active</span>
+                                    {% elif loan.status == 'completed' %}
+                                        <span class="badge bg-secondary">Completed</span>
+                                    {% elif loan.status == 'default' %}
+                                        <span class="badge bg-danger">Default</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">{{ loan.status }}</span>
+                                    {% endif %}
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="5" class="text-center text-muted">No loans yet</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12 col-lg-6 col-xxl-6 d-flex">
+            <div class="card flex-fill">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Recent Withdrawals</h5>
+                </div>
+                <table class="table table-hover my-0">
+                    <thead>
+                        <tr>
+                            <th>Purpose</th>
+                            <th class="d-none d-xl-table-cell">Date</th>
+                            <th>Amount</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for withdrawal in recent_withdrawals %}
+                        <tr>
+                            <td>{{ withdrawal.purpose|truncatewords:5 }}</td>
+                            <td class="d-none d-xl-table-cell">{{ withdrawal.date }}</td>
+                            <td>Rs. {{ withdrawal.amount|floatformat:2 }}</td>
+                            <td>
+                                {% if withdrawal.status == 'pending' %}
+                                    <span class="badge bg-warning">Pending</span>
+                                {% elif withdrawal.status == 'approved' %}
+                                    <span class="badge bg-success">Approved</span>
+                                {% elif withdrawal.status == 'rejected' %}
+                                    <span class="badge bg-danger">Rejected</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">{{ withdrawal.status }}</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="4" class="text-center text-muted">No withdrawals yet</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="col-12 col-lg-6 col-xxl-6 d-flex">
+            <div class="card flex-fill">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Recent Interest Payments</h5>
+                </div>
+                <table class="table table-hover my-0">
+                    <thead>
+                        <tr>
+                            <th>User</th>
+                            <th class="d-none d-xl-table-cell">Paid Date</th>
+                            <th>Amount</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for payment in recent_interest_payments %}
+                        <tr>
+                            <td>{{ payment.loan.user.name }}</td>
+                            <td class="d-none d-xl-table-cell">{{ payment.paid_date|default:"-" }}</td>
+                            <td><span class="badge bg-success">Rs. {{ payment.amount|floatformat:2 }}</span></td>
+                            <td>
+                                {% if payment.payment_status == 'paid' %}
+                                    <span class="badge bg-success">Paid</span>
+                                {% else %}
+                                    <span class="badge bg-warning">Pending</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="4" class="text-center text-muted">No interest payments yet</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+// Chart.js configuration for line chart
+document.addEventListener("DOMContentLoaded", function() {
+    // Line Chart - Deposits & Loans Trend
+    if (document.getElementById("chartjs-dashboard-line")) {
+        const ctx = document.getElementById("chartjs-dashboard-line").getContext("2d");
+        const chartData = {{ chart_data }};
+        
+        new Chart(ctx, {
+            type: "line",
+            data: {
+                labels: chartData.map(d => d.date),
+                datasets: [{
+                    label: "Deposits",
+                    data: chartData.map(d => d.deposits),
+                    borderColor: "rgb(34, 197, 94)",
+                    backgroundColor: "rgba(34, 197, 94, 0.1)",
+                    tension: 0.4
+                }, {
+                    label: "Loans",
+                    data: chartData.map(d => d.loans),
+                    borderColor: "rgb(239, 68, 68)",
+                    backgroundColor: "rgba(239, 68, 68, 0.1)",
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: true
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+    }
+
+    // Pie Chart - Loan Status Distribution
+    if (document.getElementById("chartjs-dashboard-pie")) {
+        const ctx = document.getElementById("chartjs-dashboard-pie").getContext("2d");
+        const loanStatusData = {
+            pending: {{ loans_pending }},
+            approved: {{ loans_approved }},
+            active: {{ loans_active }},
+            completed: {{ loans_completed }},
+            default: {{ loans_default }},
+            rejected: {{ loans_rejected }}
+        };
+        
+        new Chart(ctx, {
+            type: "pie",
+            data: {
+                labels: ["Pending", "Approved", "Active", "Completed", "Default", "Rejected"],
+                datasets: [{
+                    data: [
+                        loanStatusData.pending,
+                        loanStatusData.approved,
+                        loanStatusData.active,
+                        loanStatusData.completed,
+                        loanStatusData.default,
+                        loanStatusData.rejected
+                    ],
+                    backgroundColor: [
+                        "rgb(251, 191, 36)",
+                        "rgb(59, 130, 246)",
+                        "rgb(34, 197, 94)",
+                        "rgb(107, 114, 128)",
+                        "rgb(239, 68, 68)",
+                        "rgb(156, 163, 175)"
+                    ]
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                }
+            }
+        });
+    }
+
+    // Bar Chart - Monthly Overview
+    if (document.getElementById("chartjs-dashboard-bar")) {
+        const ctx = document.getElementById("chartjs-dashboard-bar").getContext("2d");
+        const monthlyData = {{ monthly_data }};
+        
+        new Chart(ctx, {
+            type: "bar",
+            data: {
+                labels: monthlyData.map(d => d.month),
+                datasets: [{
+                    label: "Deposits",
+                    data: monthlyData.map(d => d.deposits),
+                    backgroundColor: "rgb(34, 197, 94)"
+                }, {
+                    label: "Loans",
+                    data: monthlyData.map(d => d.loans),
+                    backgroundColor: "rgb(239, 68, 68)"
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: true
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+    }
+});
+
+// Helper function to get cookie value
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+// Handle loan status changes
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize Feather icons
+    if (typeof feather !== 'undefined') {
+        feather.replace();
+    }
+    
+    // Handle loan status dropdown changes
+    const loanStatusSelects = document.querySelectorAll('.loan-status-select');
+    loanStatusSelects.forEach(select => {
+        select.addEventListener('change', function() {
+            const loanId = this.getAttribute('data-loan-id');
+            const newStatus = this.value;
+            const originalValue = this.getAttribute('data-original-value') || this.value;
+            
+            // Confirm status change
+            if (!confirm(`Are you sure you want to change the loan status to "${newStatus}"?`)) {
+                this.value = originalValue;
+                return;
+            }
+            
+            // Create form data
+            const formData = new FormData();
+            formData.append('status', newStatus);
+            
+            // Send AJAX request
+            fetch(`/loans/${loanId}/update-status/`, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken'),
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                credentials: 'same-origin'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Show success message
+                    if (typeof Swal !== 'undefined') {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Success',
+                            text: data.message,
+                            timer: 2000,
+                            showConfirmButton: false
+                        });
+                    } else {
+                        alert(data.message);
+                    }
+                    // Update the original value
+                    this.setAttribute('data-original-value', newStatus);
+                    // Reload page after a short delay to reflect changes
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1000);
+                } else {
+                    // Show error message
+                    if (typeof Swal !== 'undefined') {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error',
+                            text: data.message || 'Failed to update loan status.'
+                        });
+                    } else {
+                        alert(data.message || 'Failed to update loan status.');
+                    }
+                    // Revert to original value
+                    this.value = originalValue;
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                if (typeof Swal !== 'undefined') {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: 'An error occurred while updating the loan status.'
+                    });
+                } else {
+                    alert('An error occurred while updating the loan status.');
+                }
+                // Revert to original value
+                this.value = originalValue;
+            });
+        });
+        
+        // Store original value
+        select.setAttribute('data-original-value', select.value);
+    });
+    
+    // Handle withdrawal status dropdown changes
+    const withdrawalStatusSelects = document.querySelectorAll('.withdrawal-status-select');
+    withdrawalStatusSelects.forEach(select => {
+        select.addEventListener('change', function() {
+            const withdrawalId = this.getAttribute('data-withdrawal-id');
+            const newStatus = this.value;
+            const originalValue = this.getAttribute('data-original-value') || this.value;
+            
+            // Confirm status change
+            if (!confirm(`Are you sure you want to change the withdrawal status to "${newStatus}"?`)) {
+                this.value = originalValue;
+                return;
+            }
+            
+            // Create form data
+            const formData = new FormData();
+            formData.append('status', newStatus);
+            
+            // Send AJAX request
+            fetch(`/organizational-withdrawals/${withdrawalId}/update-status/`, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken'),
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                credentials: 'same-origin'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Show success message
+                    if (typeof Swal !== 'undefined') {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Success',
+                            text: data.message,
+                            timer: 2000,
+                            showConfirmButton: false
+                        });
+                    } else {
+                        alert(data.message);
+                    }
+                    // Update the original value
+                    this.setAttribute('data-original-value', newStatus);
+                    // Reload page after a short delay to reflect changes
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1000);
+                } else {
+                    // Show error message
+                    if (typeof Swal !== 'undefined') {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error',
+                            text: data.message || 'Failed to update withdrawal status.'
+                        });
+                    } else {
+                        alert(data.message || 'Failed to update withdrawal status.');
+                    }
+                    // Revert to original value
+                    this.value = originalValue;
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                if (typeof Swal !== 'undefined') {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: 'An error occurred while updating the withdrawal status.'
+                    });
+                } else {
+                    alert('An error occurred while updating the withdrawal status.');
+                }
+                // Revert to original value
+                this.value = originalValue;
+            });
+        });
+        
+        // Store original value
+        select.setAttribute('data-original-value', select.value);
+    });
+});
+</script>
+
+{% endblock %}
+

@@ -1,0 +1,64 @@
+{% extends 'core/layouts/base.html' %}
+
+{% block extra_js %}
+<script src="/static/core/js/crud.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid p-0">
+    <div class="mb-3">
+        <h1 class="h3 d-inline align-middle">{% block page_title %}List{% endblock %}</h1>
+        {% block add_button %}{% endblock %}
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">{{ page_title|default:"List" }}</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <input type="text" class="form-control" id="searchInput" placeholder="Search..." onkeyup="filterTable()">
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-hover my-0" id="dataTable">
+                            <thead>
+                                {% block table_header %}{% endblock %}
+                            </thead>
+                            <tbody>
+                                {% block table_body %}{% endblock %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function filterTable() {
+    const input = document.getElementById("searchInput");
+    const filter = input.value.toLowerCase();
+    const table = document.getElementById("dataTable");
+    const tr = table.getElementsByTagName("tr");
+
+    for (let i = 1; i < tr.length; i++) {
+        const td = tr[i].getElementsByTagName("td");
+        let found = false;
+        for (let j = 0; j < td.length; j++) {
+            if (td[j]) {
+                const txtValue = td[j].textContent || td[j].innerText;
+                if (txtValue.toLowerCase().indexOf(filter) > -1) {
+                    found = true;
+                    break;
+                }
+            }
+        }
+        tr[i].style.display = found ? "" : "none";
+    }
+}
+</script>
+{% endblock %}
+

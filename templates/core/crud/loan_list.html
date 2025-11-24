@@ -1,0 +1,192 @@
+{% extends 'core/crud/base_list.html' %}
+
+{% block page_title %}Loans{% endblock %}
+
+{% block add_button %}
+{% if is_admin_board_or_staff %}
+<a href="{% url 'loan_create' %}" class="btn btn-primary ms-2">
+    <i class="align-middle" data-feather="plus"></i> Add New Loan
+</a>
+{% endif %}
+{% endblock %}
+
+{% block table_header %}
+<tr>
+    <th>User</th>
+    <th>Principal Amount</th>
+    <th>Total Payable</th>
+    <th>Timeline (Months)</th>
+    <th>Status</th>
+    <th>Applied Date</th>
+    <th>Actions</th>
+</tr>
+{% endblock %}
+
+{% block table_body %}
+{% for loan in loans %}
+<tr>
+    <td>{{ loan.user.name }}</td>
+    <td>Rs. {{ loan.principal_amount|floatformat:2 }}</td>
+    <td>Rs. {{ loan.total_payable|floatformat:2 }}</td>
+    <td>{{ loan.timeline }}</td>
+    <td>
+        {% if is_admin_or_board %}
+            <select class="form-select form-select-sm loan-status-select" data-loan-id="{{ loan.pk }}" style="min-width: 120px;">
+                <option value="pending" {% if loan.status == 'pending' %}selected{% endif %}>Pending</option>
+                <option value="approved" {% if loan.status == 'approved' %}selected{% endif %}>Approved</option>
+                <option value="rejected" {% if loan.status == 'rejected' %}selected{% endif %}>Rejected</option>
+                <option value="active" {% if loan.status == 'active' %}selected{% endif %}>Active</option>
+                <option value="completed" {% if loan.status == 'completed' %}selected{% endif %}>Completed</option>
+                <option value="default" {% if loan.status == 'default' %}selected{% endif %}>Default</option>
+            </select>
+        {% else %}
+            {% if loan.status == 'pending' %}
+                <span class="badge bg-warning">Pending</span>
+            {% elif loan.status == 'approved' %}
+                <span class="badge bg-info">Approved</span>
+            {% elif loan.status == 'active' %}
+                <span class="badge bg-success">Active</span>
+            {% elif loan.status == 'completed' %}
+                <span class="badge bg-secondary">Completed</span>
+            {% elif loan.status == 'default' %}
+                <span class="badge bg-danger">Default</span>
+            {% else %}
+                <span class="badge bg-secondary">{{ loan.status }}</span>
+            {% endif %}
+        {% endif %}
+    </td>
+    <td>{{ loan.applied_date }}</td>
+    <td>
+        <a href="{% url 'loan_view' loan.pk %}" class="btn btn-sm btn-info" title="View">
+            <i class="align-middle" data-feather="eye"></i>
+        </a>
+        {% if is_admin_board_or_staff %}
+        <a href="{% url 'loan_update' loan.pk %}" class="btn btn-sm btn-primary" title="Edit">
+            <i class="align-middle" data-feather="edit"></i>
+        </a>
+        <button class="btn btn-sm btn-danger" onclick="deleteItem('{% url 'loan_delete' loan.pk %}', 'Loan of Rs. {{ loan.principal_amount|floatformat:2 }}')" title="Delete">
+            <i class="align-middle" data-feather="trash-2"></i>
+        </button>
+        {% endif %}
+    </td>
+</tr>
+{% empty %}
+<tr>
+    <td colspan="7" class="text-center text-muted">No loans found</td>
+</tr>
+{% endfor %}
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+<script>
+// Helper function to get cookie value
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+// Handle loan status changes
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize Feather icons
+    if (typeof feather !== 'undefined') {
+        feather.replace();
+    }
+    
+    // Handle loan status dropdown changes
+    const loanStatusSelects = document.querySelectorAll('.loan-status-select');
+    loanStatusSelects.forEach(select => {
+        // Store original value
+        select.setAttribute('data-original-value', select.value);
+        
+        select.addEventListener('change', function() {
+            const loanId = this.getAttribute('data-loan-id');
+            const newStatus = this.value;
+            const originalValue = this.getAttribute('data-original-value');
+            
+            // Confirm status change with SweetAlert
+            Swal.fire({
+                title: 'Change Loan Status?',
+                text: `Are you sure you want to change the loan status to "${newStatus}"?`,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'Yes, change it!',
+                cancelButtonText: 'Cancel'
+            }).then((result) => {
+                if (!result.isConfirmed) {
+                    // User cancelled, revert to original value
+                    this.value = originalValue;
+                    return;
+                }
+                
+                // Create form data
+                const formData = new FormData();
+                formData.append('status', newStatus);
+                
+                // Send AJAX request
+                fetch(`/loans/${loanId}/update-status/`, {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-CSRFToken': getCookie('csrftoken'),
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    credentials: 'same-origin'
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Show success message
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Success',
+                            text: data.message,
+                            timer: 2000,
+                            showConfirmButton: false
+                        });
+                        // Update the original value
+                        this.setAttribute('data-original-value', newStatus);
+                        // Reload page after a short delay to reflect changes
+                        setTimeout(() => {
+                            window.location.reload();
+                        }, 1000);
+                    } else {
+                        // Show error message
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error',
+                            text: data.message || 'Failed to update loan status.'
+                        });
+                        // Revert to original value
+                        this.value = originalValue;
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: 'An error occurred while updating the loan status.'
+                    });
+                    // Revert to original value
+                    this.value = originalValue;
+                });
+            });
+        });
+    });
+});
+</script>
+{% endblock %}
+

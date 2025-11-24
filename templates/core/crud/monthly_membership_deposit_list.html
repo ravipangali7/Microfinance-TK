@@ -1,0 +1,58 @@
+{% extends 'core/crud/base_list.html' %}
+
+{% block page_title %}Monthly Membership Deposits{% endblock %}
+
+{% block add_button %}
+{% if is_admin_board_or_staff %}
+<a href="{% url 'monthly_membership_deposit_create' %}" class="btn btn-primary ms-2">
+    <i class="align-middle" data-feather="plus"></i> Add New Deposit
+</a>
+{% endif %}
+{% endblock %}
+
+{% block table_header %}
+<tr>
+    <th>User</th>
+    <th>Membership</th>
+    <th>Amount</th>
+    <th>Date</th>
+    <th>Payment Status</th>
+    <th>Actions</th>
+</tr>
+{% endblock %}
+
+{% block table_body %}
+{% for deposit in deposits %}
+<tr>
+    <td>{{ deposit.user.name }} ({{ deposit.user.phone }})</td>
+    <td>{{ deposit.membership.name }}</td>
+    <td>Rs. {{ deposit.amount|floatformat:2 }}</td>
+    <td>{{ deposit.date }}</td>
+    <td>
+        {% if deposit.payment_status == 'paid' %}
+            <span class="badge bg-success">Paid</span>
+        {% else %}
+            <span class="badge bg-warning">Pending</span>
+        {% endif %}
+    </td>
+    <td>
+        <a href="{% url 'monthly_membership_deposit_view' deposit.pk %}" class="btn btn-sm btn-info" title="View">
+            <i class="align-middle" data-feather="eye"></i>
+        </a>
+        {% if is_admin_board_or_staff %}
+        <a href="{% url 'monthly_membership_deposit_update' deposit.pk %}" class="btn btn-sm btn-primary" title="Edit">
+            <i class="align-middle" data-feather="edit"></i>
+        </a>
+        <button class="btn btn-sm btn-danger" onclick="deleteItem('{% url 'monthly_membership_deposit_delete' deposit.pk %}', '{{ deposit.user.name }} - {{ deposit.amount }}')" title="Delete">
+            <i class="align-middle" data-feather="trash-2"></i>
+        </button>
+        {% endif %}
+    </td>
+</tr>
+{% empty %}
+<tr>
+    <td colspan="6" class="text-center text-muted">No deposits found</td>
+</tr>
+{% endfor %}
+{% endblock %}
+

@@ -1,0 +1,60 @@
+{% extends 'core/crud/base_list.html' %}
+
+{% block page_title %}Users{% endblock %}
+
+{% block add_button %}
+{% if is_admin %}
+<a href="{% url 'user_create' %}" class="btn btn-primary ms-2">
+    <i class="align-middle" data-feather="plus"></i> Add New User
+</a>
+{% endif %}
+{% endblock %}
+
+{% block table_header %}
+<tr>
+    <th>Name</th>
+    <th>Phone</th>
+    <th>Email</th>
+    <th>Status</th>
+    <th>Joined Date</th>
+    <th>Actions</th>
+</tr>
+{% endblock %}
+
+{% block table_body %}
+{% for user in users %}
+<tr>
+    <td>{{ user.name }}</td>
+    <td>{{ user.phone }}</td>
+    <td>{{ user.email|default:"-" }}</td>
+    <td>
+        {% if user.status == 'active' %}
+            <span class="badge bg-success">Active</span>
+        {% elif user.status == 'freeze' %}
+            <span class="badge bg-warning">Freeze</span>
+        {% else %}
+            <span class="badge bg-secondary">Inactive</span>
+        {% endif %}
+    </td>
+    <td>{{ user.joined_date }}</td>
+    <td>
+        <a href="{% url 'user_view' user.pk %}" class="btn btn-sm btn-info" title="View">
+            <i class="align-middle" data-feather="eye"></i>
+        </a>
+        {% if is_admin %}
+        <a href="{% url 'user_update' user.pk %}" class="btn btn-sm btn-primary" title="Edit">
+            <i class="align-middle" data-feather="edit"></i>
+        </a>
+        <button class="btn btn-sm btn-danger" onclick="deleteItem('{% url 'user_delete' user.pk %}', '{{ user.name }}')" title="Delete">
+            <i class="align-middle" data-feather="trash-2"></i>
+        </button>
+        {% endif %}
+    </td>
+</tr>
+{% empty %}
+<tr>
+    <td colspan="6" class="text-center text-muted">No users found</td>
+</tr>
+{% endfor %}
+{% endblock %}
+

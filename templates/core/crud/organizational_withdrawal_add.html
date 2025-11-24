@@ -1,0 +1,54 @@
+{% extends 'core/layouts/base.html' %}
+
+{% block content %}
+<div class="container-fluid p-0">
+    <h1 class="h3 mb-3">Add New Organizational Withdrawal</h1>
+    
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Withdrawal Information</h5>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Amount *</label>
+                                {{ form.amount }}
+                                {% if form.amount.errors %}
+                                    <div class="text-danger">{{ form.amount.errors }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Date *</label>
+                                {{ form.date }}
+                                {% if form.date.errors %}
+                                    <div class="text-danger">{{ form.date.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Purpose *</label>
+                            {{ form.purpose }}
+                            {% if form.purpose.errors %}
+                                <div class="text-danger">{{ form.purpose.errors }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="alert alert-info">
+                            <i class="align-middle me-1" data-feather="info"></i>
+                            <strong>Note:</strong> The withdrawal will be created with "Pending" status and will require approval.
+                        </div>
+                        <div class="mt-3">
+                            <button type="submit" class="btn btn-primary">Create Withdrawal</button>
+                            <a href="{% url 'organizational_withdrawal_list' %}" class="btn btn-secondary">Cancel</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
