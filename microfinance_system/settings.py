@@ -179,4 +179,4 @@ UPI_PAYMENT_GATEWAY_KEY = '4feb0adb-3c68-4f1a-951a-b808d189f7ac'
 UPI_PAYMENT_GATEWAY_CREATE_ORDER_URL = 'https://api.ekqr.in/api/create_order'
 UPI_PAYMENT_GATEWAY_CHECK_STATUS_URL = 'https://api.ekqr.in/api/check_order_status'
 # Redirect URL will be constructed dynamically based on request
-UPI_PAYMENT_REDIRECT_URL_BASE = 'http://192.168.1.71:8000'  # Update with your backend URL
+UPI_PAYMENT_REDIRECT_URL_BASE = 'https://microfinance.sewabyapar.com'  # Update with your backend URL
