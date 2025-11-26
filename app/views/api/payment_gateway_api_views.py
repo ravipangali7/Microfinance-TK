@@ -5,6 +5,7 @@ from rest_framework import status
 from django.shortcuts import get_object_or_404
 from django.conf import settings
 from django.utils import timezone
+from django.db import IntegrityError
 from datetime import datetime
 from app.models import (
     PaymentTransaction, MonthlyMembershipDeposit, 
@@ -12,6 +13,7 @@ from app.models import (
 )
 from app.services.payment_gateway_service import PaymentGatewayService
 from decimal import Decimal
+import traceback
 
 
 @api_view(['POST'])
@@ -83,36 +85,104 @@ def create_payment_order_api(request):
             status=status.HTTP_400_BAD_REQUEST
         )
     
+    # Validate user fields before processing
+    if not request.user.name:
+        print(f"[ERROR] create_payment_order_api: User {request.user.id} missing name field")
+        return Response(
+            {'error': 'User profile is incomplete. Please update your name.'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+    
+    if not request.user.phone:
+        print(f"[ERROR] create_payment_order_api: User {request.user.id} missing phone field")
+        return Response(
+            {'error': 'User profile is incomplete. Please update your phone number.'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+    
     # Generate redirect URL
     redirect_url = f"{settings.UPI_PAYMENT_REDIRECT_URL_BASE}/api/payment/callback/"
     
     # Create payment order
-    order_result = PaymentGatewayService.create_payment_order(
-        payment_type=payment_type,
-        payment_id=payment_id,
-        user=request.user,
-        amount=amount_decimal,
-        redirect_url=redirect_url
-    )
-    
-    if not order_result.get('success'):
+    try:
+        order_result = PaymentGatewayService.create_payment_order(
+            payment_type=payment_type,
+            payment_id=payment_id,
+            user=request.user,
+            amount=amount_decimal,
+            redirect_url=redirect_url
+        )
+    except Exception as e:
+        print(f"[ERROR] create_payment_order_api: Exception in PaymentGatewayService.create_payment_order")
+        print(f"[ERROR] User ID: {request.user.id}, Payment Type: {payment_type}, Payment ID: {payment_id}")
+        print(f"[ERROR] Exception: {str(e)}")
+        print(f"[ERROR] Traceback: {traceback.format_exc()}")
         return Response(
-            {'error': order_result.get('error', 'Failed to create payment order')},
+            {'error': 'Failed to create payment order. Please try again.'},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
     
-    # Create payment transaction record
-    payment_transaction = PaymentTransaction.objects.create(
-        payment_type=payment_type,
-        related_object_id=payment_id,
-        user=request.user,
-        client_txn_id=order_result['client_txn_id'],
-        order_id=order_result.get('order_id'),
-        amount=amount_decimal,
-        status='pending',
-        gateway_response={'create_order': order_result}
-    )
+    if not order_result.get('success'):
+        error_msg = order_result.get('error', 'Failed to create payment order')
+        print(f"[ERROR] create_payment_order_api: Payment gateway returned error")
+        print(f"[ERROR] User ID: {request.user.id}, Payment Type: {payment_type}, Payment ID: {payment_id}")
+        print(f"[ERROR] Gateway Error: {error_msg}")
+        return Response(
+            {'error': error_msg},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
     
+    # Create payment transaction record with exception handling
+    try:
+        payment_transaction = PaymentTransaction.objects.create(
+            payment_type=payment_type,
+            related_object_id=payment_id,
+            user=request.user,
+            client_txn_id=order_result['client_txn_id'],
+            order_id=order_result.get('order_id'),
+            amount=amount_decimal,
+            status='pending',
+            gateway_response={'create_order': order_result}
+        )
+    except IntegrityError as e:
+        # Handle duplicate client_txn_id constraint violation
+        print(f"[ERROR] create_payment_order_api: IntegrityError - Duplicate client_txn_id")
+        print(f"[ERROR] User ID: {request.user.id}, Payment Type: {payment_type}, Payment ID: {payment_id}")
+        print(f"[ERROR] Client TXN ID: {order_result.get('client_txn_id')}")
+        print(f"[ERROR] Exception: {str(e)}")
+        print(f"[ERROR] Traceback: {traceback.format_exc()}")
+        
+        # Try to get existing transaction
+        try:
+            existing_transaction = PaymentTransaction.objects.get(
+                client_txn_id=order_result['client_txn_id']
+            )
+            print(f"[INFO] Found existing transaction with same client_txn_id: {existing_transaction.id}")
+            return Response({
+                'success': True,
+                'transaction_id': existing_transaction.id,
+                'client_txn_id': existing_transaction.client_txn_id,
+                'order_id': order_result.get('order_id'),
+                'payment_url': order_result.get('payment_url'),
+                'upi_intent': order_result.get('upi_intent', {}),
+            }, status=status.HTTP_201_CREATED)
+        except PaymentTransaction.DoesNotExist:
+            return Response(
+                {'error': 'Failed to create payment transaction. Please try again.'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+    except Exception as e:
+        print(f"[ERROR] create_payment_order_api: Exception creating PaymentTransaction")
+        print(f"[ERROR] User ID: {request.user.id}, Payment Type: {payment_type}, Payment ID: {payment_id}")
+        print(f"[ERROR] Client TXN ID: {order_result.get('client_txn_id')}")
+        print(f"[ERROR] Exception: {str(e)}")
+        print(f"[ERROR] Traceback: {traceback.format_exc()}")
+        return Response(
+            {'error': 'Failed to create payment transaction. Please try again.'},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+    
+    print(f"[INFO] create_payment_order_api: Successfully created payment transaction {payment_transaction.id}")
     return Response({
         'success': True,
         'transaction_id': payment_transaction.id,

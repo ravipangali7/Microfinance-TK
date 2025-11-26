@@ -33,9 +33,27 @@ class PaymentGatewayService:
         """
         client_txn_id = PaymentGatewayService.generate_client_txn_id(payment_type, payment_id)
         
+        # Validate user fields
+        if not user.name:
+            print(f"[ERROR] PaymentGatewayService.create_payment_order: User {user.id} missing name")
+            return {
+                'success': False,
+                'error': 'User name is required for payment processing',
+            }
+        
+        if not user.phone:
+            print(f"[ERROR] PaymentGatewayService.create_payment_order: User {user.id} missing phone")
+            return {
+                'success': False,
+                'error': 'User phone number is required for payment processing',
+            }
+        
         # Prepare request body
         # Include client_txn_id in redirect URL for callback
         redirect_url_with_params = f"{redirect_url}?client_txn_id={client_txn_id}"
+        
+        # Safely process phone number
+        phone_cleaned = str(user.phone).replace('+', '').replace(' ', '') if user.phone else ''
         
         request_data = {
             "key": settings.UPI_PAYMENT_GATEWAY_KEY,
@@ -43,8 +61,8 @@ class PaymentGatewayService:
             "amount": str(int(amount)),  # Amount as string, in rupees (no paise)
             "p_info": "Membership Deposit" if payment_type == 'deposit' else "Loan Interest Payment",
             "customer_name": user.name,
-            "customer_email": user.email or f"{user.phone}@microfinance.local",
-            "customer_mobile": user.phone.replace('+', '').replace(' ', ''),
+            "customer_email": user.email or f"{phone_cleaned}@microfinance.local",
+            "customer_mobile": phone_cleaned,
             "redirect_url": redirect_url_with_params,
             "udf1": payment_type,
             "udf2": str(payment_id),
@@ -77,11 +95,19 @@ class PaymentGatewayService:
                     'error': result.get('msg', 'Failed to create payment order'),
                 }
         except requests.exceptions.RequestException as e:
+            print(f"[ERROR] PaymentGatewayService.create_payment_order: RequestException")
+            print(f"[ERROR] User ID: {user.id}, Client TXN ID: {client_txn_id}")
+            print(f"[ERROR] Exception: {str(e)}")
             return {
                 'success': False,
                 'error': f'Payment gateway error: {str(e)}',
             }
         except Exception as e:
+            import traceback
+            print(f"[ERROR] PaymentGatewayService.create_payment_order: Unexpected error")
+            print(f"[ERROR] User ID: {user.id}, Client TXN ID: {client_txn_id}")
+            print(f"[ERROR] Exception: {str(e)}")
+            print(f"[ERROR] Traceback: {traceback.format_exc()}")
             return {
                 'success': False,
                 'error': f'Unexpected error: {str(e)}',
