@@ -2,7 +2,8 @@ from rest_framework import serializers
 from django.contrib.auth import authenticate
 from .models import (
     User, Membership, MembershipUser, MonthlyMembershipDeposit,
-    Loan, LoanInterestPayment, OrganizationalWithdrawal, MySetting
+    Loan, LoanInterestPayment, OrganizationalWithdrawal, MySetting,
+    PaymentTransaction
 )
 
 
@@ -215,6 +216,19 @@ class MySettingSerializer(serializers.ModelSerializer):
             'created_at', 'updated_at'
         ]
         read_only_fields = ['id', 'created_at', 'updated_at']
+
+
+class PaymentTransactionSerializer(serializers.ModelSerializer):
+    user = UserSerializer(read_only=True)
+    
+    class Meta:
+        model = PaymentTransaction
+        fields = [
+            'id', 'payment_type', 'related_object_id', 'user', 'client_txn_id',
+            'order_id', 'amount', 'status', 'gateway_response', 'upi_txn_id',
+            'txn_date', 'created_at', 'updated_at'
+        ]
+        read_only_fields = ['id', 'created_at', 'updated_at', 'gateway_response']
 
 
 class LoginSerializer(serializers.Serializer):

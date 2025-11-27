@@ -43,6 +43,10 @@ from .payment_gateway_api_views import (
     check_payment_status_api,
     payment_callback_api,
 )
+from .payment_transaction_api_views import (
+    payment_transaction_list_api,
+    payment_transaction_detail_api,
+)
 
 __all__ = [
     'login_api', 'logout_api', 'current_user_api',
@@ -60,4 +64,6 @@ __all__ = [
     'create_payment_order_api',
     'check_payment_status_api',
     'payment_callback_api',
+    'payment_transaction_list_api',
+    'payment_transaction_detail_api',
 ]

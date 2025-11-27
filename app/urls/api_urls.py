@@ -28,6 +28,9 @@ from app.views.api import (
     create_payment_order_api,
     check_payment_status_api,
     payment_callback_api,
+    # Payment Transactions
+    payment_transaction_list_api,
+    payment_transaction_detail_api,
 )
 
 urlpatterns = [
@@ -109,4 +112,8 @@ urlpatterns = [
     path('payment/create-order/', create_payment_order_api, name='api_create_payment_order'),
     path('payment/check-status/', check_payment_status_api, name='api_check_payment_status'),
     path('payment/callback/', payment_callback_api, name='api_payment_callback'),
+    
+    # Payment Transactions
+    path('payment-transactions/', payment_transaction_list_api, name='api_payment_transaction_list'),
+    path('payment-transactions/<int:pk>/', payment_transaction_detail_api, name='api_payment_transaction_detail'),
 ]

@@ -5,14 +5,19 @@ from rest_framework import status
 from django.shortcuts import get_object_or_404
 from app.models import MembershipUser
 from app.serializers import MembershipUserSerializer
-from app.views.admin.helpers import is_admin
+from app.views.admin.helpers import is_admin, is_member
 
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def membership_user_list_api(request):
-    """List all membership-user relationships"""
-    membership_users = MembershipUser.objects.all().select_related('user', 'membership').order_by('-created_at')
+    """List membership-user relationships with role-based filtering"""
+    if is_member(request.user):
+        # Members can only see their own membership users
+        membership_users = MembershipUser.objects.filter(user=request.user).select_related('user', 'membership').order_by('-created_at')
+    else:
+        # Admin/Board/Staff can see all membership users
+        membership_users = MembershipUser.objects.all().select_related('user', 'membership').order_by('-created_at')
     serializer = MembershipUserSerializer(membership_users, many=True)
     return Response(serializer.data, status=status.HTTP_200_OK)
 
@@ -40,6 +45,14 @@ def membership_user_create_api(request):
 def membership_user_detail_api(request, pk):
     """Get membership-user relationship details"""
     membership_user = get_object_or_404(MembershipUser, pk=pk)
+    
+    # Members can only see their own membership users
+    if is_member(request.user) and membership_user.user.id != request.user.id:
+        return Response(
+            {'error': 'Access denied. You can only view your own memberships.'},
+            status=status.HTTP_403_FORBIDDEN
+        )
+    
     serializer = MembershipUserSerializer(membership_user)
     return Response(serializer.data, status=status.HTTP_200_OK)
 
