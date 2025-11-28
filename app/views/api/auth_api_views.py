@@ -2,7 +2,6 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
-from rest_framework.authtoken.models import Token
 from django.contrib.auth import authenticate
 from app.models import User, UserStatus
 from app.serializers import LoginSerializer, UserSerializer
@@ -11,7 +10,7 @@ from app.serializers import LoginSerializer, UserSerializer
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def login_api(request):
-    """API endpoint for user login with token authentication"""
+    """API endpoint for user login with phone-based authentication"""
     serializer = LoginSerializer(data=request.data)
     
     if serializer.is_valid():
@@ -29,15 +28,15 @@ def login_api(request):
                 status=status.HTTP_403_FORBIDDEN
             )
         
-        # Get or create token
-        token, created = Token.objects.get_or_create(user=user)
-        
-        # Serialize user data
+        # Serialize user data (includes groups/roles)
         user_serializer = UserSerializer(user)
         
+        # Return user data with roles - no token needed
         return Response({
-            'token': token.key,
-            'user': user_serializer.data
+            'success': True,
+            'user': user_serializer.data,
+            'user_roles': [group.name for group in user.groups.all()],
+            'user_phone': user.phone
         }, status=status.HTTP_200_OK)
     
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -47,14 +46,15 @@ def login_api(request):
 @permission_classes([IsAuthenticated])
 def logout_api(request):
     """API endpoint for user logout"""
-    try:
-        # Delete the token
-        request.user.auth_token.delete()
-    except Exception:
-        pass
-    
+    # No token to delete with phone-based auth
+    # Just return success message
     return Response(
-        {'message': 'Successfully logged out.'},
+        {
+            'success': True,
+            'message': 'Successfully logged out.',
+            'user_roles': [group.name for group in request.user.groups.all()],
+            'user_phone': request.user.phone
+        },
         status=status.HTTP_200_OK
     )
 
@@ -64,5 +64,9 @@ def logout_api(request):
 def current_user_api(request):
     """API endpoint to get current authenticated user"""
     serializer = UserSerializer(request.user)
-    return Response(serializer.data, status=status.HTTP_200_OK)
+    return Response({
+        **serializer.data,
+        'user_roles': [group.name for group in request.user.groups.all()],
+        'user_phone': request.user.phone
+    }, status=status.HTTP_200_OK)
 
