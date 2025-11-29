@@ -199,17 +199,25 @@ class Command(BaseCommand):
         
         # Start from start_date month
         current = start_date.replace(day=1)
+        end_month = end_date.replace(day=1)
         
         # Determine end month
         if include_current_month:
             # Include current month (end_date month)
-            end = end_date.replace(day=1)
+            end = end_month
         else:
             # Exclude current month - go back one month from end_date
             if end_date.month == 1:
                 end = end_date.replace(year=end_date.year - 1, month=12, day=1)
             else:
                 end = end_date.replace(month=end_date.month - 1, day=1)
+            
+            # Special case: If start_date is in the current month and we're not checking current month,
+            # we should still check the start_date month (current month) if it's the same as start_date
+            # This handles the case where membership/loan was created in current month
+            if current.year == end_month.year and current.month == end_month.month:
+                # Start date is in current month, include it even though we're not checking current month normally
+                end = end_month
         
         # Generate all months from start to end (inclusive)
         while current <= end:
