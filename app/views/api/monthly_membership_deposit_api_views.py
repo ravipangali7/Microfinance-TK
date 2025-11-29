@@ -3,7 +3,9 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
 from django.shortcuts import get_object_or_404
-from app.models import MonthlyMembershipDeposit
+from django.utils.dateparse import parse_date
+from decimal import Decimal
+from app.models import MonthlyMembershipDeposit, PaymentStatus
 from app.serializers import MonthlyMembershipDepositSerializer
 from app.views.admin.helpers import is_admin_board_or_staff, is_member
 
@@ -26,7 +28,7 @@ def monthly_membership_deposit_list_api(request):
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def monthly_membership_deposit_create_api(request):
-    """Create a new monthly membership deposit"""
+    """Create a new monthly membership deposit or update existing pending one"""
     # Members can create their own deposits, Admin/Board/Staff can create any
     data = request.data.copy()
     
@@ -43,6 +45,67 @@ def monthly_membership_deposit_create_api(request):
                     status=status.HTTP_403_FORBIDDEN
                 )
     
+    # Check for existing pending deposit with strict matching
+    user_id = data.get('user_id')
+    membership_id = data.get('membership_id')
+    date_str = data.get('date')
+    amount = data.get('amount')
+    
+    if user_id and membership_id and date_str and amount:
+        try:
+            # Parse date
+            if isinstance(date_str, str):
+                deposit_date = parse_date(date_str)
+                if deposit_date is None:
+                    # Date parsing failed, continue with normal creation
+                    pass
+                else:
+                    # Convert amount to Decimal for comparison
+                    amount_decimal = Decimal(str(amount))
+                    
+                    # Check for existing pending deposit with exact match
+                    existing_pending = MonthlyMembershipDeposit.objects.filter(
+                        user_id=user_id,
+                        membership_id=membership_id,
+                        date=deposit_date,
+                        amount=amount_decimal,
+                        payment_status=PaymentStatus.PENDING
+                    ).first()
+                    
+                    if existing_pending:
+                        # Update existing pending deposit
+                        serializer = MonthlyMembershipDepositSerializer(existing_pending, data=data, partial=True)
+                        if serializer.is_valid():
+                            deposit = serializer.save()
+                            return Response(MonthlyMembershipDepositSerializer(deposit).data, status=status.HTTP_200_OK)
+                        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            else:
+                # Date is already a date object
+                deposit_date = date_str
+                # Convert amount to Decimal for comparison
+                amount_decimal = Decimal(str(amount))
+                
+                # Check for existing pending deposit with exact match
+                existing_pending = MonthlyMembershipDeposit.objects.filter(
+                    user_id=user_id,
+                    membership_id=membership_id,
+                    date=deposit_date,
+                    amount=amount_decimal,
+                    payment_status=PaymentStatus.PENDING
+                ).first()
+                
+                if existing_pending:
+                    # Update existing pending deposit
+                    serializer = MonthlyMembershipDepositSerializer(existing_pending, data=data, partial=True)
+                    if serializer.is_valid():
+                        deposit = serializer.save()
+                        return Response(MonthlyMembershipDepositSerializer(deposit).data, status=status.HTTP_200_OK)
+                    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        except (ValueError, TypeError) as e:
+            # If parsing fails, continue with normal creation
+            pass
+    
+    # No existing pending deposit found, create new one
     serializer = MonthlyMembershipDepositSerializer(data=data)
     if serializer.is_valid():
         deposit = serializer.save()

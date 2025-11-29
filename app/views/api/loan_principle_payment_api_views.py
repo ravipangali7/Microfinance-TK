@@ -3,7 +3,8 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
 from django.shortcuts import get_object_or_404
-from app.models import LoanPrinciplePayment, Loan
+from decimal import Decimal
+from app.models import LoanPrinciplePayment, Loan, PaymentStatus
 from app.serializers import LoanPrinciplePaymentSerializer
 from app.views.admin.helpers import is_admin_board_or_staff, is_member
 
@@ -68,7 +69,6 @@ def loan_principle_payment_create_api(request):
     # Validate amount doesn't exceed remaining principle
     amount = data.get('amount')
     if amount:
-        from decimal import Decimal
         try:
             amount_decimal = Decimal(str(amount))
             remaining = loan.get_remaining_principle()
@@ -83,6 +83,31 @@ def loan_principle_payment_create_api(request):
                 status=status.HTTP_400_BAD_REQUEST
             )
     
+    # Check for existing pending payment with strict matching
+    if loan_id and amount:
+        try:
+            # Convert amount to Decimal for comparison
+            amount_decimal = Decimal(str(amount))
+            
+            # Check for existing pending payment with exact match
+            existing_pending = LoanPrinciplePayment.objects.filter(
+                loan_id=loan_id,
+                amount=amount_decimal,
+                payment_status=PaymentStatus.PENDING
+            ).first()
+            
+            if existing_pending:
+                # Update existing pending payment
+                serializer = LoanPrinciplePaymentSerializer(existing_pending, data=data, partial=True)
+                if serializer.is_valid():
+                    payment = serializer.save()
+                    return Response(LoanPrinciplePaymentSerializer(payment).data, status=status.HTTP_200_OK)
+                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        except (ValueError, TypeError) as e:
+            # If parsing fails, continue with normal creation
+            pass
+    
+    # No existing pending payment found, create new one
     serializer = LoanPrinciplePaymentSerializer(data=data)
     if serializer.is_valid():
         payment = serializer.save()

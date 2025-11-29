@@ -3,7 +3,9 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
 from django.shortcuts import get_object_or_404
-from app.models import LoanInterestPayment, Loan
+from django.utils.dateparse import parse_date
+from decimal import Decimal
+from app.models import LoanInterestPayment, Loan, PaymentStatus
 from app.serializers import LoanInterestPaymentSerializer
 from app.views.admin.helpers import is_admin_board_or_staff, is_member
 
@@ -38,7 +40,7 @@ def loan_interest_payment_list_api(request):
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def loan_interest_payment_create_api(request):
-    """Create a new loan interest payment"""
+    """Create a new loan interest payment or update existing pending one"""
     # Members can create interest payments for their own loans, Admin/Board/Staff can create any
     data = request.data.copy()
     loan_id = data.get('loan_id')
@@ -65,6 +67,63 @@ def loan_interest_payment_create_api(request):
                 status=status.HTTP_400_BAD_REQUEST
             )
     
+    # Check for existing pending payment with strict matching
+    paid_date_str = data.get('paid_date')
+    amount = data.get('amount')
+    
+    if loan_id and paid_date_str and amount:
+        try:
+            # Parse date
+            if isinstance(paid_date_str, str):
+                paid_date = parse_date(paid_date_str)
+                if paid_date is None:
+                    # Date parsing failed, continue with normal creation
+                    pass
+                else:
+                    # Convert amount to Decimal for comparison
+                    amount_decimal = Decimal(str(amount))
+                    
+                    # Check for existing pending payment with exact match
+                    existing_pending = LoanInterestPayment.objects.filter(
+                        loan_id=loan_id,
+                        paid_date=paid_date,
+                        amount=amount_decimal,
+                        payment_status=PaymentStatus.PENDING
+                    ).first()
+                    
+                    if existing_pending:
+                        # Update existing pending payment
+                        serializer = LoanInterestPaymentSerializer(existing_pending, data=data, partial=True)
+                        if serializer.is_valid():
+                            payment = serializer.save()
+                            return Response(LoanInterestPaymentSerializer(payment).data, status=status.HTTP_200_OK)
+                        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            else:
+                # Date is already a date object
+                paid_date = paid_date_str
+                # Convert amount to Decimal for comparison
+                amount_decimal = Decimal(str(amount))
+                
+                # Check for existing pending payment with exact match
+                existing_pending = LoanInterestPayment.objects.filter(
+                    loan_id=loan_id,
+                    paid_date=paid_date,
+                    amount=amount_decimal,
+                    payment_status=PaymentStatus.PENDING
+                ).first()
+                
+                if existing_pending:
+                    # Update existing pending payment
+                    serializer = LoanInterestPaymentSerializer(existing_pending, data=data, partial=True)
+                    if serializer.is_valid():
+                        payment = serializer.save()
+                        return Response(LoanInterestPaymentSerializer(payment).data, status=status.HTTP_200_OK)
+                    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        except (ValueError, TypeError) as e:
+            # If parsing fails, continue with normal creation
+            pass
+    
+    # No existing pending payment found, create new one
     serializer = LoanInterestPaymentSerializer(data=data)
     if serializer.is_valid():
         payment = serializer.save()
