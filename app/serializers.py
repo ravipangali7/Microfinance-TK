@@ -129,6 +129,12 @@ class LoanInterestPaymentSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = ['id', 'created_at', 'updated_at']
     
+    def to_representation(self, instance):
+        """Include loan_id in read operations"""
+        representation = super().to_representation(instance)
+        representation['loan_id'] = instance.loan.id
+        return representation
+    
     def create(self, validated_data):
         # Auto-set paid_date when payment_status is 'paid' and paid_date not provided
         payment_status = validated_data.get('payment_status', 'pending')
@@ -190,6 +196,12 @@ class LoanPrinciplePaymentSerializer(serializers.ModelSerializer):
             'created_at', 'updated_at'
         ]
         read_only_fields = ['id', 'created_at', 'updated_at']
+    
+    def to_representation(self, instance):
+        """Include loan_id in read operations"""
+        representation = super().to_representation(instance)
+        representation['loan_id'] = instance.loan.id
+        return representation
     
     def create(self, validated_data):
         # Auto-set paid_date when payment_status is 'paid' and paid_date not provided
