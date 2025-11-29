@@ -132,8 +132,21 @@ def loan_details_api(request, pk):
     # Get all payments for this loan (for dropdown)
     all_payments = interest_payments.order_by('-paid_date')
     
-    from app.serializers import LoanInterestPaymentSerializer
+    from app.serializers import LoanInterestPaymentSerializer, LoanPrinciplePaymentSerializer
     payments_serializer = LoanInterestPaymentSerializer(all_payments, many=True)
+    
+    # Get principle payments
+    principle_payments = loan.principle_payments.all()
+    total_principle_payments = principle_payments.count()
+    paid_principle_payments = principle_payments.filter(payment_status=PaymentStatus.PAID).count()
+    pending_principle_payments = principle_payments.filter(payment_status=PaymentStatus.PENDING).count()
+    
+    from decimal import Decimal
+    total_paid_principle = sum(payment.amount for payment in principle_payments.filter(payment_status=PaymentStatus.PAID))
+    total_principle = sum(payment.amount for payment in principle_payments)
+    remaining_principle = loan.get_remaining_principle()
+    
+    principle_payments_serializer = LoanPrinciplePaymentSerializer(principle_payments.order_by('-paid_date'), many=True)
     
     data = {
         'loan': LoanSerializer(loan).data,
@@ -153,6 +166,17 @@ def loan_details_api(request, pk):
             'amount': str(first_pending_payment.amount) if first_pending_payment else None,
         },
         'all_payments': payments_serializer.data,
+        'principle_payments': {
+            'total': total_principle_payments,
+            'paid': paid_principle_payments,
+            'pending': pending_principle_payments,
+        },
+        'principle_amounts': {
+            'total_paid_principle': str(total_paid_principle),
+            'total_principle': str(total_principle),
+            'remaining_principle': str(remaining_principle),
+        },
+        'all_principle_payments': principle_payments_serializer.data,
     }
     
     return Response(data, status=status.HTTP_200_OK)

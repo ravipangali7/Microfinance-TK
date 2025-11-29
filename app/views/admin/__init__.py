@@ -27,6 +27,11 @@ from .loan_interest_payment_views import (
     loan_interest_payment_update, loan_interest_payment_delete,
     loan_interest_payment_view, get_loan_interest_amount
 )
+from .loan_principle_payment_views import (
+    loan_principle_payment_list, loan_principle_payment_create,
+    loan_principle_payment_update, loan_principle_payment_delete,
+    loan_principle_payment_view
+)
 from .organizational_withdrawal_views import (
     organizational_withdrawal_list, organizational_withdrawal_create,
     organizational_withdrawal_update, organizational_withdrawal_delete,
@@ -51,6 +56,7 @@ __all__ = [
     'monthly_membership_deposit_list', 'monthly_membership_deposit_create', 'monthly_membership_deposit_update', 'monthly_membership_deposit_delete', 'monthly_membership_deposit_view', 'get_user_memberships',
     'loan_list', 'loan_create', 'loan_update', 'loan_delete', 'loan_view',
     'loan_interest_payment_list', 'loan_interest_payment_create', 'loan_interest_payment_update', 'loan_interest_payment_delete', 'loan_interest_payment_view', 'get_loan_interest_amount',
+    'loan_principle_payment_list', 'loan_principle_payment_create', 'loan_principle_payment_update', 'loan_principle_payment_delete', 'loan_principle_payment_view',
     'organizational_withdrawal_list', 'organizational_withdrawal_create', 'organizational_withdrawal_update', 'organizational_withdrawal_delete', 'organizational_withdrawal_view',
     'mysetting_view', 'mysetting_update',
     'board_approval_view', 'approve_loan', 'reject_loan', 'update_loan_status',

@@ -3,7 +3,7 @@ from django.contrib.auth.models import Group
 from django.utils import timezone
 from .models import (
     User, Membership, MembershipUser, MonthlyMembershipDeposit,
-    Loan, LoanInterestPayment, OrganizationalWithdrawal, MySetting,
+    Loan, LoanInterestPayment, LoanPrinciplePayment, OrganizationalWithdrawal, MySetting,
     PaymentTransaction,
     LoanStatus, PaymentStatus, WithdrawalStatus
 )
@@ -95,9 +95,6 @@ class LoanAdmin(admin.ModelAdmin):
         ('Loan Information', {
             'fields': ('user', 'applied_date', 'principal_amount', 'interest_rate', 'total_payable', 'timeline')
         }),
-        ('Payment Tracking', {
-            'fields': ('paid_principle_amount', 'due_principle_amount')
-        }),
         ('Status', {
             'fields': ('status', 'action_by', 'approved_date', 'disbursed_date', 'completed_date')
         }),
@@ -145,6 +142,21 @@ class LoanAdmin(admin.ModelAdmin):
 
 @admin.register(LoanInterestPayment)
 class LoanInterestPaymentAdmin(admin.ModelAdmin):
+    list_display = ['loan', 'amount', 'payment_status', 'paid_date', 'created_at']
+    list_filter = ['payment_status', 'paid_date', 'created_at']
+    search_fields = ['loan__user__name', 'loan__user__phone']
+    readonly_fields = ['created_at', 'updated_at']
+    raw_id_fields = ['loan']
+    date_hierarchy = 'paid_date'
+    ordering = ['-paid_date', '-created_at']
+    
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        return qs.select_related('loan', 'loan__user')
+
+
+@admin.register(LoanPrinciplePayment)
+class LoanPrinciplePaymentAdmin(admin.ModelAdmin):
     list_display = ['loan', 'amount', 'payment_status', 'paid_date', 'created_at']
     list_filter = ['payment_status', 'paid_date', 'created_at']
     search_fields = ['loan__user__name', 'loan__user__phone']

@@ -10,6 +10,7 @@ from app.views.admin import (
     monthly_membership_deposit_list, monthly_membership_deposit_create, monthly_membership_deposit_update, monthly_membership_deposit_delete, monthly_membership_deposit_view, get_user_memberships,
     loan_list, loan_create, loan_update, loan_delete, loan_view,
     loan_interest_payment_list, loan_interest_payment_create, loan_interest_payment_update, loan_interest_payment_delete, loan_interest_payment_view, get_loan_interest_amount,
+    loan_principle_payment_list, loan_principle_payment_create, loan_principle_payment_update, loan_principle_payment_delete, loan_principle_payment_view,
     organizational_withdrawal_list, organizational_withdrawal_create, organizational_withdrawal_update, organizational_withdrawal_delete, organizational_withdrawal_view,
     mysetting_view, mysetting_update,
     board_approval_view, approve_loan, reject_loan, update_loan_status,
@@ -68,6 +69,13 @@ urlpatterns = [
     path('loan-interest-payments/<int:pk>/edit/', loan_interest_payment_update, name='loan_interest_payment_update'),
     path('loan-interest-payments/<int:pk>/delete/', loan_interest_payment_delete, name='loan_interest_payment_delete'),
     path('loan-interest-payments/get-loan-interest-amount/<int:loan_id>/', get_loan_interest_amount, name='get_loan_interest_amount'),
+    
+    # Loan Principle Payment CRUD
+    path('loan-principle-payments/', loan_principle_payment_list, name='loan_principle_payment_list'),
+    path('loan-principle-payments/create/', loan_principle_payment_create, name='loan_principle_payment_create'),
+    path('loan-principle-payments/<int:pk>/', loan_principle_payment_view, name='loan_principle_payment_view'),
+    path('loan-principle-payments/<int:pk>/edit/', loan_principle_payment_update, name='loan_principle_payment_update'),
+    path('loan-principle-payments/<int:pk>/delete/', loan_principle_payment_delete, name='loan_principle_payment_delete'),
     
     # Organizational Withdrawal CRUD
     path('organizational-withdrawals/', organizational_withdrawal_list, name='organizational_withdrawal_list'),

@@ -14,6 +14,8 @@ from app.views.api import (
     loan_list_api, loan_create_api, loan_detail_api, loan_update_api, loan_delete_api, loan_details_api,
     # Loan Interest Payments
     loan_interest_payment_list_api, loan_interest_payment_create_api, loan_interest_payment_detail_api, loan_interest_payment_update_api, loan_interest_payment_delete_api,
+    # Loan Principle Payments
+    loan_principle_payment_list_api, loan_principle_payment_create_api, loan_principle_payment_detail_api, loan_principle_payment_update_api, loan_principle_payment_delete_api,
     # Organizational Withdrawals
     organizational_withdrawal_list_api, organizational_withdrawal_create_api, organizational_withdrawal_detail_api, organizational_withdrawal_update_api, organizational_withdrawal_delete_api,
     # Settings
@@ -81,6 +83,13 @@ urlpatterns = [
     path('loan-interest-payments/<int:pk>/', loan_interest_payment_detail_api, name='api_loan_interest_payment_detail'),
     path('loan-interest-payments/<int:pk>/update/', loan_interest_payment_update_api, name='api_loan_interest_payment_update'),
     path('loan-interest-payments/<int:pk>/delete/', loan_interest_payment_delete_api, name='api_loan_interest_payment_delete'),
+    
+    # Loan Principle Payments
+    path('loan-principle-payments/', loan_principle_payment_list_api, name='api_loan_principle_payment_list'),
+    path('loan-principle-payments/create/', loan_principle_payment_create_api, name='api_loan_principle_payment_create'),
+    path('loan-principle-payments/<int:pk>/', loan_principle_payment_detail_api, name='api_loan_principle_payment_detail'),
+    path('loan-principle-payments/<int:pk>/update/', loan_principle_payment_update_api, name='api_loan_principle_payment_update'),
+    path('loan-principle-payments/<int:pk>/delete/', loan_principle_payment_delete_api, name='api_loan_principle_payment_delete'),
     
     # Organizational Withdrawals
     path('organizational-withdrawals/', organizational_withdrawal_list_api, name='api_organizational_withdrawal_list'),

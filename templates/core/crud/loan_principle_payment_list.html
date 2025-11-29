@@ -1,0 +1,58 @@
+{% extends 'core/crud/base_list.html' %}
+
+{% block page_title %}Loan Principle Payments{% endblock %}
+
+{% block add_button %}
+{% if is_admin_board_or_staff %}
+<a href="{% url 'loan_principle_payment_create' %}" class="btn btn-primary ms-2">
+    <i class="align-middle" data-feather="plus"></i> Add New Principle Payment
+</a>
+{% endif %}
+{% endblock %}
+
+{% block table_header %}
+<tr>
+    <th>Loan</th>
+    <th>User</th>
+    <th>Amount</th>
+    <th>Payment Status</th>
+    <th>Paid Date</th>
+    <th>Actions</th>
+</tr>
+{% endblock %}
+
+{% block table_body %}
+{% for payment in payments %}
+<tr>
+    <td>Loan #{{ payment.loan.id }}</td>
+    <td>{{ payment.loan.user.name }} ({{ payment.loan.user.phone }})</td>
+    <td>Rs. {{ payment.amount|floatformat:2 }}</td>
+    <td>
+        {% if payment.payment_status == 'paid' %}
+            <span class="badge bg-success">Paid</span>
+        {% else %}
+            <span class="badge bg-warning">Pending</span>
+        {% endif %}
+    </td>
+    <td>{{ payment.paid_date|default:"-" }}</td>
+    <td>
+        <a href="{% url 'loan_principle_payment_view' payment.pk %}" class="btn btn-sm btn-info" title="View">
+            <i class="align-middle" data-feather="eye"></i>
+        </a>
+        {% if is_admin_board_or_staff %}
+        <a href="{% url 'loan_principle_payment_update' payment.pk %}" class="btn btn-sm btn-primary" title="Edit">
+            <i class="align-middle" data-feather="edit"></i>
+        </a>
+        <button class="btn btn-sm btn-danger" onclick="deleteItem('{% url 'loan_principle_payment_delete' payment.pk %}', 'Loan #{{ payment.loan.id }} - {{ payment.amount }}')" title="Delete">
+            <i class="align-middle" data-feather="trash-2"></i>
+        </button>
+        {% endif %}
+    </td>
+</tr>
+{% empty %}
+<tr>
+    <td colspan="6" class="text-center text-muted">No principle payments found</td>
+</tr>
+{% endfor %}
+{% endblock %}
+

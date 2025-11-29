@@ -185,8 +185,6 @@ class Loan(TimeStampedModel):
     interest_rate = models.DecimalField(max_digits=5, decimal_places=2)
     total_payable = models.DecimalField(max_digits=15, decimal_places=2)
     timeline = models.IntegerField(help_text='Timeline in months', default=12)
-    paid_principle_amount = models.DecimalField(max_digits=15, decimal_places=2, default=Decimal('0.00'))
-    due_principle_amount = models.DecimalField(max_digits=15, decimal_places=2)
     action_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='loan_actions')
     status = models.CharField(max_length=20, choices=LoanStatus.choices, default=LoanStatus.PENDING)
     approved_date = models.DateField(blank=True, null=True)
@@ -202,21 +200,16 @@ class Loan(TimeStampedModel):
         return f"{self.user.name} - {self.principal_amount} - {self.status}"
 
     def save(self, *args, **kwargs):
-        # Auto-calculate due_principle_amount as principal_amount - paid_principle_amount
-        self.due_principle_amount = self.principal_amount - self.paid_principle_amount
-        
         # Track previous state if updating
         is_new = self.pk is None
         old_status = None
         old_principal = None
-        old_paid_principle = None
         
         if not is_new:
             try:
                 old_instance = Loan.objects.get(pk=self.pk)
                 old_status = old_instance.status
                 old_principal = old_instance.principal_amount
-                old_paid_principle = old_instance.paid_principle_amount
             except Loan.DoesNotExist:
                 pass
         
@@ -245,22 +238,16 @@ class Loan(TimeStampedModel):
                     update_system_balance(difference, operation='subtract')
                 else:
                     update_system_balance(abs(difference), operation='add')
-            
-            # Handle principal payment (paid_principle_amount changes)
-            if self.status == LoanStatus.ACTIVE:
-                # Treat None as 0.00 for old_paid_principle (shouldn't happen, but safety check)
-                if old_paid_principle is None:
-                    old_paid_principle = Decimal('0.00')
-                
-                if old_paid_principle != self.paid_principle_amount:
-                    # Principal payment changed: update balance
-                    payment_difference = self.paid_principle_amount - old_paid_principle
-                    if payment_difference > 0:
-                        # Principal being paid back: add to balance (money returning to organization)
-                        update_system_balance(payment_difference, operation='add')
-                    elif payment_difference < 0:
-                        # Principal payment reversed/corrected: subtract from balance
-                        update_system_balance(abs(payment_difference), operation='subtract')
+    
+    def get_total_paid_principle(self):
+        """Calculate total paid principle from all paid principle payments"""
+        return sum(
+            payment.amount for payment in self.principle_payments.filter(payment_status=PaymentStatus.PAID)
+        )
+    
+    def get_remaining_principle(self):
+        """Calculate remaining principle amount"""
+        return self.principal_amount - self.get_total_paid_principle()
 
     def delete(self, *args, **kwargs):
         # If loan was active (disbursed), add back to balance
@@ -454,11 +441,78 @@ class MySetting(TimeStampedModel):
         return obj
 
 
+# LoanPrinciplePayment Model
+class LoanPrinciplePayment(TimeStampedModel):
+    loan = models.ForeignKey(Loan, on_delete=models.CASCADE, related_name='principle_payments')
+    amount = models.DecimalField(max_digits=15, decimal_places=2)
+    payment_status = models.CharField(max_length=20, choices=PaymentStatus.choices, default=PaymentStatus.PENDING)
+    paid_date = models.DateField(blank=True, null=True)
+
+    class Meta:
+        verbose_name = 'Loan Principle Payment'
+        verbose_name_plural = 'Loan Principle Payments'
+        ordering = ['-paid_date', '-created_at']
+
+    def __str__(self):
+        return f"{self.loan.user.name} - {self.amount} - {self.paid_date}"
+
+    def save(self, *args, **kwargs):
+        # Auto-update paid_date when status changes to paid
+        if self.payment_status == PaymentStatus.PAID and not self.paid_date:
+            self.paid_date = timezone.now().date()
+        
+        # Track previous state if updating
+        is_new = self.pk is None
+        old_status = None
+        old_amount = None
+        
+        if not is_new:
+            try:
+                old_instance = LoanPrinciplePayment.objects.get(pk=self.pk)
+                old_status = old_instance.payment_status
+                old_amount = old_instance.amount
+            except LoanPrinciplePayment.DoesNotExist:
+                pass
+        
+        # Save the instance first
+        super().save(*args, **kwargs)
+        
+        # Update balance based on payment status changes
+        if is_new:
+            # New payment: add to balance if paid
+            if self.payment_status == PaymentStatus.PAID:
+                update_system_balance(self.amount, operation='add')
+        else:
+            # Existing payment: handle status and amount changes
+            if old_status != self.payment_status:
+                # Status changed
+                if old_status == PaymentStatus.PAID and self.payment_status == PaymentStatus.PENDING:
+                    # Was paid, now pending: subtract from balance
+                    update_system_balance(old_amount, operation='subtract')
+                elif old_status == PaymentStatus.PENDING and self.payment_status == PaymentStatus.PAID:
+                    # Was pending, now paid: add to balance
+                    update_system_balance(self.amount, operation='add')
+            elif self.payment_status == PaymentStatus.PAID and old_amount != self.amount:
+                # Amount changed while paid: adjust balance
+                difference = self.amount - old_amount
+                if difference > 0:
+                    update_system_balance(difference, operation='add')
+                else:
+                    update_system_balance(abs(difference), operation='subtract')
+
+    def delete(self, *args, **kwargs):
+        # If payment was paid, subtract from balance
+        if self.payment_status == PaymentStatus.PAID:
+            update_system_balance(self.amount, operation='subtract')
+        super().delete(*args, **kwargs)
+
+
 # Payment Transaction Model (for UPI Gateway)
 class PaymentTransaction(TimeStampedModel):
     PAYMENT_TYPE_CHOICES = [
         ('deposit', 'Deposit'),
         ('interest', 'Interest Payment'),
+        ('principle', 'Principle Payment'),
     ]
     
     TRANSACTION_STATUS_CHOICES = [
@@ -469,7 +523,7 @@ class PaymentTransaction(TimeStampedModel):
     ]
     
     payment_type = models.CharField(max_length=20, choices=PAYMENT_TYPE_CHOICES)
-    related_object_id = models.IntegerField(help_text='ID of MonthlyMembershipDeposit or LoanInterestPayment')
+    related_object_id = models.IntegerField(help_text='ID of MonthlyMembershipDeposit, LoanInterestPayment, or LoanPrinciplePayment')
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='payment_transactions')
     client_txn_id = models.CharField(max_length=255, unique=True, help_text='Unique transaction ID for gateway')
     order_id = models.BigIntegerField(null=True, blank=True, help_text='Order ID from payment gateway')

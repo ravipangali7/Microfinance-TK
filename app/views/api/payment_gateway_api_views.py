@@ -9,7 +9,7 @@ from django.db import IntegrityError
 from datetime import datetime
 from app.models import (
     PaymentTransaction, MonthlyMembershipDeposit, 
-    LoanInterestPayment, User
+    LoanInterestPayment, LoanPrinciplePayment, User
 )
 from app.services.payment_gateway_service import PaymentGatewayService
 from decimal import Decimal
@@ -24,8 +24,8 @@ def create_payment_order_api(request):
     
     Request body:
     {
-        "payment_type": "deposit" or "interest",
-        "payment_id": <id of deposit or interest payment>,
+        "payment_type": "deposit", "interest", or "principle",
+        "payment_id": <id of deposit, interest payment, or principle payment>,
         "amount": <amount>
     }
     """
@@ -34,9 +34,9 @@ def create_payment_order_api(request):
     amount = request.data.get('amount')
     
     # Validate inputs
-    if not payment_type or payment_type not in ['deposit', 'interest']:
+    if not payment_type or payment_type not in ['deposit', 'interest', 'principle']:
         return Response(
-            {'error': 'Invalid payment_type. Must be "deposit" or "interest".'},
+            {'error': 'Invalid payment_type. Must be "deposit", "interest", or "principle".'},
             status=status.HTTP_400_BAD_REQUEST
         )
     
@@ -69,8 +69,16 @@ def create_payment_order_api(request):
                 {'error': 'You can only create payment orders for your own deposits.'},
                 status=status.HTTP_403_FORBIDDEN
             )
-    else:  # interest
+    elif payment_type == 'interest':
         payment_obj = get_object_or_404(LoanInterestPayment, pk=payment_id)
+        # Verify user owns this loan
+        if payment_obj.loan.user.id != request.user.id:
+            return Response(
+                {'error': 'You can only create payment orders for your own loan payments.'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+    else:  # principle
+        payment_obj = get_object_or_404(LoanPrinciplePayment, pk=payment_id)
         # Verify user owns this loan
         if payment_obj.loan.user.id != request.user.id:
             return Response(

@@ -4,7 +4,7 @@ from decimal import Decimal
 from django.conf import settings
 from django.utils import timezone
 from datetime import datetime
-from app.models import PaymentTransaction, MonthlyMembershipDeposit, LoanInterestPayment, User
+from app.models import PaymentTransaction, MonthlyMembershipDeposit, LoanInterestPayment, LoanPrinciplePayment, User
 
 
 class PaymentGatewayService:
@@ -55,11 +55,19 @@ class PaymentGatewayService:
         # Safely process phone number
         phone_cleaned = str(user.phone).replace('+', '').replace(' ', '') if user.phone else ''
         
+        # Set payment info text based on payment type
+        if payment_type == 'deposit':
+            p_info = "Membership Deposit"
+        elif payment_type == 'interest':
+            p_info = "Loan Interest Payment"
+        else:  # principle
+            p_info = "Loan Principle Payment"
+        
         request_data = {
             "key": settings.UPI_PAYMENT_GATEWAY_KEY,
             "client_txn_id": client_txn_id,
             "amount": str(int(amount)),  # Amount as string, in rupees (no paise)
-            "p_info": "Membership Deposit" if payment_type == 'deposit' else "Loan Interest Payment",
+            "p_info": p_info,
             "customer_name": user.name,
             "customer_email": user.email or f"{phone_cleaned}@microfinance.local",
             "customer_mobile": phone_cleaned,
@@ -222,6 +230,13 @@ class PaymentGatewayService:
                     interest_payment.payment_status = 'paid'
                     interest_payment.save()
                 except LoanInterestPayment.DoesNotExist:
+                    pass
+            elif payment_transaction.payment_type == 'principle':
+                try:
+                    principle_payment = LoanPrinciplePayment.objects.get(pk=payment_transaction.related_object_id)
+                    principle_payment.payment_status = 'paid'
+                    principle_payment.save()
+                except LoanPrinciplePayment.DoesNotExist:
                     pass
             
             return True

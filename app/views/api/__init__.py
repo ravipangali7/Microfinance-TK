@@ -26,6 +26,11 @@ from .loan_interest_payment_api_views import (
     loan_interest_payment_detail_api, loan_interest_payment_update_api,
     loan_interest_payment_delete_api
 )
+from .loan_principle_payment_api_views import (
+    loan_principle_payment_list_api, loan_principle_payment_create_api,
+    loan_principle_payment_detail_api, loan_principle_payment_update_api,
+    loan_principle_payment_delete_api
+)
 from .organizational_withdrawal_api_views import (
     organizational_withdrawal_list_api, organizational_withdrawal_create_api,
     organizational_withdrawal_detail_api, organizational_withdrawal_update_api,
@@ -56,6 +61,7 @@ __all__ = [
     'monthly_membership_deposit_list_api', 'monthly_membership_deposit_create_api', 'monthly_membership_deposit_detail_api', 'monthly_membership_deposit_update_api', 'monthly_membership_deposit_delete_api',
     'loan_list_api', 'loan_create_api', 'loan_detail_api', 'loan_update_api', 'loan_delete_api', 'loan_details_api',
     'loan_interest_payment_list_api', 'loan_interest_payment_create_api', 'loan_interest_payment_detail_api', 'loan_interest_payment_update_api', 'loan_interest_payment_delete_api',
+    'loan_principle_payment_list_api', 'loan_principle_payment_create_api', 'loan_principle_payment_detail_api', 'loan_principle_payment_update_api', 'loan_principle_payment_delete_api',
     'organizational_withdrawal_list_api', 'organizational_withdrawal_create_api', 'organizational_withdrawal_detail_api', 'organizational_withdrawal_update_api', 'organizational_withdrawal_delete_api',
     'mysetting_detail_api', 'mysetting_update_api', 'loan_settings_api',
     'dashboard_api',

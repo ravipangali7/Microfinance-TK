@@ -2,7 +2,7 @@ from rest_framework import serializers
 from django.contrib.auth import authenticate
 from .models import (
     User, Membership, MembershipUser, MonthlyMembershipDeposit,
-    Loan, LoanInterestPayment, OrganizationalWithdrawal, MySetting,
+    Loan, LoanInterestPayment, LoanPrinciplePayment, OrganizationalWithdrawal, MySetting,
     PaymentTransaction
 )
 
@@ -179,22 +179,65 @@ class LoanInterestPaymentSerializer(serializers.ModelSerializer):
         return super().update(instance, validated_data)
 
 
+class LoanPrinciplePaymentSerializer(serializers.ModelSerializer):
+    loan_id = serializers.IntegerField(write_only=True)
+    
+    class Meta:
+        model = LoanPrinciplePayment
+        fields = [
+            'id', 'loan_id', 'amount', 'payment_status', 'paid_date',
+            'created_at', 'updated_at'
+        ]
+        read_only_fields = ['id', 'created_at', 'updated_at']
+    
+    def create(self, validated_data):
+        # Auto-set paid_date when payment_status is 'paid' and paid_date not provided
+        payment_status = validated_data.get('payment_status', 'pending')
+        if payment_status == 'paid' and 'paid_date' not in validated_data:
+            from django.utils import timezone
+            validated_data['paid_date'] = timezone.now().date()
+        
+        return super().create(validated_data)
+    
+    def update(self, instance, validated_data):
+        # Auto-update paid_date when payment_status changes to 'paid'
+        payment_status = validated_data.get('payment_status', instance.payment_status)
+        
+        if payment_status == 'paid' and instance.payment_status != 'paid':
+            from django.utils import timezone
+            # Only auto-set if paid_date wasn't explicitly provided
+            if 'paid_date' not in validated_data:
+                validated_data['paid_date'] = timezone.now().date()
+        
+        return super().update(instance, validated_data)
+
+
 class LoanSerializer(serializers.ModelSerializer):
     user = UserSerializer(read_only=True)
     user_id = serializers.IntegerField(write_only=True)
     action_by = UserSerializer(read_only=True)
     action_by_id = serializers.IntegerField(write_only=True, required=False, allow_null=True)
+    total_paid_principle = serializers.SerializerMethodField()
+    remaining_principle = serializers.SerializerMethodField()
     
     class Meta:
         model = Loan
         fields = [
             'id', 'user', 'user_id', 'applied_date', 'principal_amount',
-            'interest_rate', 'total_payable', 'timeline', 'paid_principle_amount',
-            'due_principle_amount', 'status', 'approved_date',
+            'interest_rate', 'total_payable', 'timeline', 'total_paid_principle',
+            'remaining_principle', 'status', 'approved_date',
             'disbursed_date', 'completed_date', 'action_by', 'action_by_id',
             'created_at', 'updated_at'
         ]
-        read_only_fields = ['id', 'created_at', 'updated_at']
+        read_only_fields = ['id', 'created_at', 'updated_at', 'total_paid_principle', 'remaining_principle']
+    
+    def get_total_paid_principle(self, obj):
+        """Calculate total paid principle from all paid principle payments"""
+        return float(obj.get_total_paid_principle())
+    
+    def get_remaining_principle(self, obj):
+        """Calculate remaining principle amount"""
+        return float(obj.get_remaining_principle())
 
 
 class OrganizationalWithdrawalSerializer(serializers.ModelSerializer):

@@ -92,14 +92,14 @@
                                 <dt class="col-sm-5 mb-2">Timeline</dt>
                                 <dd class="col-sm-7 mb-2">{{ obj.timeline }} months</dd>
                                 
-                                <dt class="col-sm-5 mb-2">Paid Principal</dt>
+                                <dt class="col-sm-5 mb-2">Total Paid Principal</dt>
                                 <dd class="col-sm-7 mb-2">
-                                    <span class="text-success fw-bold">Rs. {{ obj.paid_principle_amount|floatformat:2 }}</span>
+                                    <span class="text-success fw-bold">Rs. {{ total_paid_principle|floatformat:2 }}</span>
                                 </dd>
                                 
-                                <dt class="col-sm-5 mb-2">Due Principal</dt>
+                                <dt class="col-sm-5 mb-2">Remaining Principal</dt>
                                 <dd class="col-sm-7 mb-2">
-                                    <span class="text-warning fw-bold">Rs. {{ obj.due_principle_amount|floatformat:2 }}</span>
+                                    <span class="text-warning fw-bold">Rs. {{ remaining_principle|floatformat:2 }}</span>
                                 </dd>
                             </dl>
                         </div>
@@ -227,6 +227,80 @@
                         <div class="alert alert-info mb-0">
                             <i class="align-middle me-2" data-feather="info"></i>
                             No interest payments found for this loan.
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Loan Principle Payments Section -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="align-middle me-2" data-feather="dollar-sign"></i>
+                        Loan Principle Payments
+                        <span class="badge bg-primary ms-2">{{ principle_payments|length }}</span>
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if principle_payments %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>#</th>
+                                        <th>
+                                            <i class="align-middle me-1" data-feather="dollar-sign"></i> Amount
+                                        </th>
+                                        <th>Payment Status</th>
+                                        <th>
+                                            <i class="align-middle me-1" data-feather="calendar"></i> Paid Date
+                                        </th>
+                                        <th class="text-end">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for payment in principle_payments %}
+                                    <tr>
+                                        <td><strong>{{ forloop.counter }}</strong></td>
+                                        <td>
+                                            <span class="fw-bold text-primary">Rs. {{ payment.amount|floatformat:2 }}</span>
+                                        </td>
+                                        <td>
+                                            {% if payment.payment_status == 'paid' %}
+                                                <span class="badge bg-success">
+                                                    <i class="align-middle me-1" data-feather="check-circle"></i> Paid
+                                                </span>
+                                            {% else %}
+                                                <span class="badge bg-warning">
+                                                    <i class="align-middle me-1" data-feather="clock"></i> Pending
+                                                </span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if payment.paid_date %}
+                                                {{ payment.paid_date|date:"M d, Y" }}
+                                            {% else %}
+                                                <span class="text-muted">-</span>
+                                            {% endif %}
+                                        </td>
+                                        <td class="text-end">
+                                            <a href="{% url 'loan_principle_payment_view' payment.pk %}" class="btn btn-sm btn-outline-info" title="View">
+                                                <i class="align-middle" data-feather="eye"></i> View
+                                            </a>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="alert alert-info mb-0">
+                            <i class="align-middle me-2" data-feather="info"></i>
+                            No principle payments found for this loan.
                         </div>
                     {% endif %}
                 </div>

@@ -4,7 +4,7 @@ from django.core.exceptions import ValidationError
 from decimal import Decimal
 from .models import (
     User, Membership, MembershipUser, MonthlyMembershipDeposit,
-    Loan, LoanInterestPayment, OrganizationalWithdrawal, MySetting,
+    Loan, LoanInterestPayment, LoanPrinciplePayment, OrganizationalWithdrawal, MySetting,
     UserStatus, LoanStatus, PaymentStatus, WithdrawalStatus, Gender
 )
 
@@ -121,7 +121,7 @@ class LoanForm(forms.ModelForm):
         model = Loan
         fields = [
             'user', 'applied_date', 'principal_amount', 'interest_rate',
-            'total_payable', 'timeline', 'paid_principle_amount', 'due_principle_amount',
+            'total_payable', 'timeline',
             'status', 'approved_date', 'disbursed_date', 'completed_date', 'action_by'
         ]
         widgets = {
@@ -130,24 +130,10 @@ class LoanForm(forms.ModelForm):
             'interest_rate': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
             'total_payable': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
             'timeline': forms.NumberInput(attrs={'class': 'form-control'}),
-            'paid_principle_amount': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
-            'due_principle_amount': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
             'status': forms.Select(attrs={'class': 'form-select'}, choices=LoanStatus.choices),
             'approved_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
             'disbursed_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
             'completed_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
-        }
-
-
-class LoanPaymentForm(forms.ModelForm):
-    """Restricted form for editing loans with interest payments - only allows principal payment updates"""
-    
-    class Meta:
-        model = Loan
-        fields = ['paid_principle_amount', 'due_principle_amount']
-        widgets = {
-            'paid_principle_amount': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
-            'due_principle_amount': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
         }
 
 
@@ -218,10 +204,6 @@ class LoanCreateForm(forms.ModelForm):
             interest_amount = (principal_amount * instance.interest_rate) / Decimal('100')
             instance.total_payable = principal_amount + interest_amount
         
-        # Set default due_principle_amount
-        if not instance.due_principle_amount:
-            instance.due_principle_amount = principal_amount
-        
         # Set default status to PENDING only for new instances
         if is_new:
             instance.status = LoanStatus.PENDING
@@ -240,6 +222,30 @@ class LoanInterestPaymentForm(forms.ModelForm):
     
     class Meta:
         model = LoanInterestPayment
+        fields = ['loan', 'amount', 'payment_status', 'paid_date']
+        widgets = {
+            'amount': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
+            'payment_status': forms.Select(attrs={'class': 'form-select'}, choices=PaymentStatus.choices),
+            'paid_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+        }
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Set default paid_date to today for new instances only
+        if not self.instance.pk and 'paid_date' in self.fields:
+            from django.utils import timezone
+            today = timezone.now().date()
+            self.fields['paid_date'].initial = today
+
+
+class LoanPrinciplePaymentForm(forms.ModelForm):
+    loan = forms.ModelChoiceField(
+        queryset=Loan.objects.filter(status__in=[LoanStatus.APPROVED, LoanStatus.ACTIVE]).select_related('user').order_by('-applied_date'),
+        widget=forms.Select(attrs={'class': 'form-select'})
+    )
+    
+    class Meta:
+        model = LoanPrinciplePayment
         fields = ['loan', 'amount', 'payment_status', 'paid_date']
         widgets = {
             'amount': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),

@@ -3,8 +3,8 @@ from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from app.models import Loan, LoanInterestPayment
-from app.forms import LoanForm, LoanCreateForm, LoanPaymentForm
+from app.models import Loan, LoanInterestPayment, LoanPrinciplePayment
+from app.forms import LoanForm, LoanCreateForm
 from .helpers import is_admin, is_member, get_role_context
 
 
@@ -62,22 +62,13 @@ def loan_update(request, pk):
     has_payments = LoanInterestPayment.objects.filter(loan=obj).exists()
     
     if request.method == 'POST':
-        # Use restricted form if interest payments exist, otherwise use full form
-        if has_payments:
-            form = LoanPaymentForm(request.POST, instance=obj)
-        else:
-            form = LoanForm(request.POST, instance=obj)
-        
+        form = LoanForm(request.POST, instance=obj)
         if form.is_valid():
             obj = form.save()
             messages.success(request, 'Loan updated successfully.')
             return redirect('loan_view', pk=pk)
     else:
-        # Use restricted form if interest payments exist, otherwise use full form
-        if has_payments:
-            form = LoanPaymentForm(instance=obj)
-        else:
-            form = LoanForm(instance=obj)
+        form = LoanForm(instance=obj)
     
     context = {'form': form, 'obj': obj, 'has_payments': has_payments}
     context.update(get_role_context(request))
@@ -96,9 +87,19 @@ def loan_view(request, pk):
     # Get all interest payments for this loan
     interest_payments = obj.interest_payments.all().order_by('-paid_date')
     
+    # Get all principle payments for this loan
+    principle_payments = obj.principle_payments.all().order_by('-paid_date')
+    
+    # Calculate remaining principle
+    remaining_principle = obj.get_remaining_principle()
+    total_paid_principle = obj.get_total_paid_principle()
+    
     context = {
         'obj': obj,
         'interest_payments': interest_payments,
+        'principle_payments': principle_payments,
+        'remaining_principle': remaining_principle,
+        'total_paid_principle': total_paid_principle,
     }
     context.update(get_role_context(request))
     return render(request, 'core/crud/loan_view.html', context)
