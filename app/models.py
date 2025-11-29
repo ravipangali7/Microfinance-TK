@@ -121,6 +121,8 @@ class MonthlyMembershipDeposit(TimeStampedModel):
     amount = models.DecimalField(max_digits=15, decimal_places=2)
     date = models.DateField(default=timezone.now)
     payment_status = models.CharField(max_length=20, choices=PaymentStatus.choices, default=PaymentStatus.PENDING)
+    name = models.CharField(max_length=50, blank=True, help_text='Auto-generated format: YYYY MMM (e.g., "2025 Apr")')
+    paid_date = models.DateField(blank=True, null=True, help_text='Date when payment was completed')
 
     class Meta:
         verbose_name = 'Monthly Membership Deposit'
@@ -131,6 +133,12 @@ class MonthlyMembershipDeposit(TimeStampedModel):
         return f"{self.user.name} - {self.amount} - {self.date}"
 
     def save(self, *args, **kwargs):
+        # Auto-generate name if not provided
+        if not self.name and self.date:
+            month_names = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 
+                          'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+            self.name = f"{self.date.year} {month_names[self.date.month - 1]}"
+        
         # Track previous state if updating
         is_new = self.pk is None
         old_status = None
@@ -262,6 +270,7 @@ class LoanInterestPayment(TimeStampedModel):
     amount = models.DecimalField(max_digits=15, decimal_places=2)
     payment_status = models.CharField(max_length=20, choices=PaymentStatus.choices, default=PaymentStatus.PENDING)
     paid_date = models.DateField(blank=True, null=True)
+    name = models.CharField(max_length=50, blank=True, help_text='Auto-generated format: YYYY MMM (e.g., "2025 Oct")')
 
     class Meta:
         verbose_name = 'Loan Interest Payment'
@@ -275,6 +284,13 @@ class LoanInterestPayment(TimeStampedModel):
         # Auto-update paid_date when status changes to paid
         if self.payment_status == PaymentStatus.PAID and not self.paid_date:
             self.paid_date = timezone.now().date()
+        
+        # Auto-generate name if not provided (use paid_date if available, otherwise use current date)
+        if not self.name:
+            date_to_use = self.paid_date if self.paid_date else timezone.now().date()
+            month_names = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 
+                          'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+            self.name = f"{date_to_use.year} {month_names[date_to_use.month - 1]}"
         
         # Track previous state if updating
         is_new = self.pk is None
