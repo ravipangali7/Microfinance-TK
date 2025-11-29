@@ -93,6 +93,31 @@ def create_payment_order_api(request):
             status=status.HTTP_400_BAD_REQUEST
         )
     
+    # Check for existing pending payment transaction for this payment
+    # This prevents creating duplicate transactions when user restarts payment
+    existing_pending_transaction = PaymentTransaction.objects.filter(
+        payment_type=payment_type,
+        related_object_id=payment_id,
+        user=request.user,
+        status='pending'
+    ).order_by('-created_at').first()
+    
+    if existing_pending_transaction:
+        print(f"[INFO] create_payment_order_api: Found existing pending transaction {existing_pending_transaction.id} for payment_type={payment_type}, payment_id={payment_id}")
+        # Return existing transaction details
+        # Check if we need to get fresh gateway response or reuse existing
+        gateway_response = existing_pending_transaction.gateway_response or {}
+        create_order_response = gateway_response.get('create_order', {})
+        
+        return Response({
+            'success': True,
+            'transaction_id': existing_pending_transaction.id,
+            'client_txn_id': existing_pending_transaction.client_txn_id,
+            'order_id': existing_pending_transaction.order_id or create_order_response.get('order_id'),
+            'payment_url': create_order_response.get('payment_url'),
+            'upi_intent': create_order_response.get('upi_intent', {}),
+        }, status=status.HTTP_200_OK)
+    
     # Validate user fields before processing
     if not request.user.name:
         print(f"[ERROR] create_payment_order_api: User {request.user.id} missing name field")
