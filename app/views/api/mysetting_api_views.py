@@ -10,14 +10,9 @@ from app.views.admin.helpers import is_admin
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def mysetting_detail_api(request):
-    """Get system settings"""
-    # Only Admin can view settings
-    if not is_admin(request.user):
-        return Response(
-            {'error': 'Access denied. Only Admin can view settings.'},
-            status=status.HTTP_403_FORBIDDEN
-        )
-    
+    """Get system settings - accessible to all authenticated users (read-only)"""
+    # Allow all authenticated users to view settings
+    # This allows members to calculate "My Share" = system_balance / total_users
     settings = MySetting.get_settings()
     serializer = MySettingSerializer(settings)
     return Response(serializer.data, status=status.HTTP_200_OK)
