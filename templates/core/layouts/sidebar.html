@@ -62,6 +62,14 @@
             </li>
             {% endif %}
 
+            {% if is_admin %}
+            <li class="sidebar-item">
+                <a class="sidebar-link" href="{% url 'push_notification_list' %}">
+                    <i class="align-middle" data-feather="bell"></i> <span class="align-middle">Push Notifications</span>
+                </a>
+            </li>
+            {% endif %}
+
             <li class="sidebar-header">
                 Configuration
             </li>
