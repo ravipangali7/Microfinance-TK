@@ -59,6 +59,7 @@ class User(AbstractUser, TimeStampedModel):
     country = models.CharField(max_length=100, default='Nepal')
     joined_date = models.DateField(default=timezone.now)
     status = models.CharField(max_length=20, choices=UserStatus.choices, default=UserStatus.ACTIVE)
+    fcm_token = models.CharField(max_length=255, blank=True, null=True)
 
     USERNAME_FIELD = 'phone'
     REQUIRED_FIELDS = ['name', 'email']

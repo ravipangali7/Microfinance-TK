@@ -16,7 +16,7 @@ class UserSerializer(serializers.ModelSerializer):
             'id', 'phone', 'name', 'email', 'gender', 'date_of_birth',
             'address', 'national_id', 'country_code', 'country', 
             'joined_date', 'status', 'is_staff', 
-            'is_superuser', 'is_active', 'groups', 'created_at', 'updated_at'
+            'is_superuser', 'is_active', 'groups', 'fcm_token', 'created_at', 'updated_at'
         ]
         read_only_fields = ['id', 'created_at', 'updated_at', 'groups']
     
