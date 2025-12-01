@@ -59,7 +59,7 @@
                     </div>
                     <div class="mt-3">
                         <a href="{% url 'push_notification_list' %}" class="btn btn-secondary">Back to List</a>
-                        {% if is_admin and not notification.sent_at %}
+                        {% if is_admin %}
                             <a href="{% url 'push_notification_update' notification.pk %}" class="btn btn-primary">Edit</a>
                             <button class="btn btn-success send-notification-btn" data-notification-id="{{ notification.pk }}">
                                 <i class="align-middle" data-feather="send"></i> Send Notification

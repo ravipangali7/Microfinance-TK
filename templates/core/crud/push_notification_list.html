@@ -62,7 +62,6 @@
             <i class="align-middle" data-feather="eye"></i>
         </a>
         {% if is_admin %}
-            {% if not notification.sent_at %}
             <a href="{% url 'push_notification_update' notification.pk %}" class="btn btn-sm btn-primary" title="Edit">
                 <i class="align-middle" data-feather="edit"></i>
             </a>
@@ -72,7 +71,6 @@
             <button class="btn btn-sm btn-danger" onclick="deleteItem('{% url 'push_notification_delete' notification.pk %}', 'Notification: {{ notification.title }}')" title="Delete">
                 <i class="align-middle" data-feather="trash-2"></i>
             </button>
-            {% endif %}
         {% endif %}
     </td>
 </tr>

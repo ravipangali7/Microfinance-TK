@@ -64,11 +64,6 @@ def push_notification_update(request, pk):
     
     notification = get_object_or_404(PushNotification, pk=pk)
     
-    # Don't allow editing if already sent
-    if notification.sent_at:
-        messages.warning(request, 'Cannot edit a notification that has already been sent.')
-        return redirect('push_notification_view', pk=pk)
-    
     if request.method == 'POST':
         form = PushNotificationForm(request.POST, request.FILES, instance=notification)
         if form.is_valid():
@@ -111,11 +106,6 @@ def push_notification_delete(request, pk):
     
     notification = get_object_or_404(PushNotification, pk=pk)
     
-    # Don't allow deleting if already sent
-    if notification.sent_at:
-        messages.warning(request, 'Cannot delete a notification that has already been sent.')
-        return redirect('push_notification_view', pk=pk)
-    
     notification.delete()
     messages.success(request, 'Push notification deleted successfully.')
     return redirect('push_notification_list')
@@ -124,19 +114,15 @@ def push_notification_delete(request, pk):
 @login_required
 @require_http_methods(["POST"])
 def send_push_notification_view(request, pk):
-    """Send a push notification to all users"""
+    """Send a push notification to all users (can be sent multiple times)"""
     # Only admin can send push notifications
     if not is_admin(request.user):
         return JsonResponse({'success': False, 'error': 'Access denied. Only Admin can send push notifications.'}, status=403)
     
     notification = get_object_or_404(PushNotification, pk=pk)
     
-    # Check if already sent
-    if notification.sent_at:
-        return JsonResponse({'success': False, 'error': 'This notification has already been sent.'}, status=400)
-    
     try:
-        # Send notification using the service
+        # Send notification using the service (allows unlimited sends)
         stats = send_push_notification(notification, request.user)
         
         return JsonResponse({
