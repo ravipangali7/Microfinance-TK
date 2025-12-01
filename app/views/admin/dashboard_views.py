@@ -8,7 +8,8 @@ from decimal import Decimal
 import json
 from app.models import (
     User, Membership, MembershipUser, MonthlyMembershipDeposit,
-    Loan, LoanInterestPayment, OrganizationalWithdrawal, MySetting,
+    Loan, LoanInterestPayment, LoanPrinciplePayment, PaymentTransaction,
+    OrganizationalWithdrawal, MySetting,
     UserStatus, LoanStatus, PaymentStatus, WithdrawalStatus
 )
 from .helpers import is_member, get_role_context
@@ -32,6 +33,8 @@ def dashboard_view(request):
     loan_queryset = Loan.objects.all()
     withdrawal_queryset = OrganizationalWithdrawal.objects.all()
     interest_payment_queryset = LoanInterestPayment.objects.all()
+    principle_payment_queryset = LoanPrinciplePayment.objects.all()
+    payment_transaction_queryset = PaymentTransaction.objects.all()
     
     # Filter for Member users (only own data)
     if is_member_user:
@@ -39,6 +42,8 @@ def dashboard_view(request):
         membership_deposit_queryset = MonthlyMembershipDeposit.objects.filter(user=user)
         loan_queryset = Loan.objects.filter(user=user)
         interest_payment_queryset = LoanInterestPayment.objects.filter(loan__user=user)
+        principle_payment_queryset = LoanPrinciplePayment.objects.filter(loan__user=user)
+        payment_transaction_queryset = PaymentTransaction.objects.filter(user=user)
     
     # User Statistics (only for Admin/Board/Staff)
     total_users = user_queryset.count() if not is_member_user else 0
@@ -125,6 +130,53 @@ def dashboard_view(request):
     recent_interest_payments = interest_payment_queryset.select_related(
         'loan', 'loan__user'
     ).order_by('-paid_date', '-created_at')[:10]
+    
+    # Loan Principle Payment Statistics
+    total_principle_payments = principle_payment_queryset.count()
+    principle_payments_pending = principle_payment_queryset.filter(payment_status=PaymentStatus.PENDING).count()
+    principle_payments_paid = principle_payment_queryset.filter(payment_status=PaymentStatus.PAID).count()
+    
+    total_paid_principle = principle_payment_queryset.filter(payment_status=PaymentStatus.PAID).aggregate(
+        total=Sum('amount')
+    )['total'] or Decimal('0.00')
+    
+    recent_principle_payments = principle_payment_queryset.select_related(
+        'loan', 'loan__user'
+    ).order_by('-paid_date', '-created_at')[:10]
+    
+    # Payment Transaction Statistics (only for Admin/Board/Staff)
+    if not is_member_user:
+        total_payment_transactions = payment_transaction_queryset.count()
+        transactions_success = payment_transaction_queryset.filter(status='success').count()
+        transactions_pending = payment_transaction_queryset.filter(status='pending').count()
+        transactions_failed = payment_transaction_queryset.filter(status='failed').count()
+        transactions_cancelled = payment_transaction_queryset.filter(status='cancelled').count()
+        
+        total_transaction_amount = payment_transaction_queryset.filter(status='success').aggregate(
+            total=Sum('amount')
+        )['total'] or Decimal('0.00')
+        
+        transactions_last_7_days = payment_transaction_queryset.filter(
+            created_at__date__gte=last_7_days,
+            status='success'
+        ).aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
+        
+        transactions_last_30_days = payment_transaction_queryset.filter(
+            created_at__date__gte=last_30_days,
+            status='success'
+        ).aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
+        
+        recent_payment_transactions = payment_transaction_queryset.select_related('user').order_by('-created_at')[:10]
+    else:
+        total_payment_transactions = 0
+        transactions_success = 0
+        transactions_pending = 0
+        transactions_failed = 0
+        transactions_cancelled = 0
+        total_transaction_amount = Decimal('0.00')
+        transactions_last_7_days = Decimal('0.00')
+        transactions_last_30_days = Decimal('0.00')
+        recent_payment_transactions = []
     
     # Loan Status Distribution for Pie Chart
     loan_status_data = {
@@ -229,6 +281,24 @@ def dashboard_view(request):
         'interest_payments_paid': interest_payments_paid,
         'total_paid_interest': total_paid_interest,
         'recent_interest_payments': recent_interest_payments,
+        
+        # Principle Payment Statistics
+        'total_principle_payments': total_principle_payments,
+        'principle_payments_pending': principle_payments_pending,
+        'principle_payments_paid': principle_payments_paid,
+        'total_paid_principle': total_paid_principle,
+        'recent_principle_payments': recent_principle_payments,
+        
+        # Payment Transaction Statistics
+        'total_payment_transactions': total_payment_transactions,
+        'transactions_success': transactions_success,
+        'transactions_pending': transactions_pending,
+        'transactions_failed': transactions_failed,
+        'transactions_cancelled': transactions_cancelled,
+        'total_transaction_amount': total_transaction_amount,
+        'transactions_last_7_days': transactions_last_7_days,
+        'transactions_last_30_days': transactions_last_30_days,
+        'recent_payment_transactions': recent_payment_transactions,
         
         # Chart Data (JSON serialized)
         'chart_data': mark_safe(json.dumps(chart_data)),

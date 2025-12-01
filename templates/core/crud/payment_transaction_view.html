@@ -1,0 +1,243 @@
+{% extends 'core/layouts/base.html' %}
+
+{% block content %}
+<div class="container-fluid p-0">
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0">
+                <i class="align-middle me-2" data-feather="credit-card"></i>
+                Payment Transaction Details
+            </h1>
+        </div>
+        <div>
+            <a href="{% url 'payment_transaction_list' %}" class="btn btn-secondary">
+                <i class="align-middle me-1" data-feather="arrow-left"></i> Back to List
+            </a>
+        </div>
+    </div>
+    
+    <!-- Main Information Card -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="align-middle me-2" data-feather="info"></i>
+                        Transaction Information
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <!-- Transaction Details -->
+                        <div class="col-lg-6 mb-4">
+                            <h6 class="text-muted text-uppercase mb-3">
+                                <i class="align-middle me-1" data-feather="credit-card"></i>
+                                Transaction Details
+                            </h6>
+                            <dl class="row mb-0">
+                                <dt class="col-sm-5 mb-2">Transaction ID</dt>
+                                <dd class="col-sm-7 mb-2">
+                                    <code class="fs-6">{{ transaction.client_txn_id }}</code>
+                                </dd>
+                                
+                                <dt class="col-sm-5 mb-2">Order ID</dt>
+                                <dd class="col-sm-7 mb-2">
+                                    {% if transaction.order_id %}
+                                        {{ transaction.order_id }}
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </dd>
+                                
+                                <dt class="col-sm-5 mb-2">UPI Transaction ID</dt>
+                                <dd class="col-sm-7 mb-2">
+                                    {% if transaction.upi_txn_id %}
+                                        <code>{{ transaction.upi_txn_id }}</code>
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </dd>
+                                
+                                <dt class="col-sm-5 mb-2">Payment Type</dt>
+                                <dd class="col-sm-7 mb-2">
+                                    {% if transaction.payment_type == 'deposit' %}
+                                        <span class="badge bg-info fs-6">Membership Deposit</span>
+                                    {% elif transaction.payment_type == 'interest' %}
+                                        <span class="badge bg-warning fs-6">Interest Payment</span>
+                                    {% elif transaction.payment_type == 'principle' %}
+                                        <span class="badge bg-primary fs-6">Principle Payment</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary fs-6">{{ transaction.get_payment_type_display }}</span>
+                                    {% endif %}
+                                </dd>
+                                
+                                <dt class="col-sm-5 mb-2">Amount</dt>
+                                <dd class="col-sm-7 mb-2">
+                                    <span class="fs-4 fw-bold text-success">Rs. {{ transaction.amount|floatformat:2 }}</span>
+                                </dd>
+                                
+                                <dt class="col-sm-5 mb-2">Status</dt>
+                                <dd class="col-sm-7 mb-2">
+                                    {% if transaction.status == 'success' %}
+                                        <span class="badge bg-success fs-6">
+                                            <i class="align-middle me-1" data-feather="check-circle"></i> Success
+                                        </span>
+                                    {% elif transaction.status == 'pending' %}
+                                        <span class="badge bg-warning fs-6">
+                                            <i class="align-middle me-1" data-feather="clock"></i> Pending
+                                        </span>
+                                    {% elif transaction.status == 'failed' %}
+                                        <span class="badge bg-danger fs-6">
+                                            <i class="align-middle me-1" data-feather="x-circle"></i> Failed
+                                        </span>
+                                    {% elif transaction.status == 'cancelled' %}
+                                        <span class="badge bg-secondary fs-6">
+                                            <i class="align-middle me-1" data-feather="x"></i> Cancelled
+                                        </span>
+                                    {% else %}
+                                        <span class="badge bg-secondary fs-6">{{ transaction.get_status_display }}</span>
+                                    {% endif %}
+                                </dd>
+                                
+                                <dt class="col-sm-5 mb-2">Transaction Date</dt>
+                                <dd class="col-sm-7 mb-2">
+                                    {% if transaction.txn_date %}
+                                        {{ transaction.txn_date|date:"F d, Y" }}
+                                    {% else %}
+                                        <span class="text-muted">Not available</span>
+                                    {% endif %}
+                                </dd>
+                            </dl>
+                        </div>
+                        
+                        <!-- User Information -->
+                        <div class="col-lg-6 mb-4">
+                            <h6 class="text-muted text-uppercase mb-3">
+                                <i class="align-middle me-1" data-feather="user"></i>
+                                User Information
+                            </h6>
+                            <dl class="row mb-0">
+                                <dt class="col-sm-4 mb-2">Name</dt>
+                                <dd class="col-sm-8 mb-2">
+                                    <strong>{{ transaction.user.name }}</strong>
+                                </dd>
+                                
+                                <dt class="col-sm-4 mb-2">Phone</dt>
+                                <dd class="col-sm-8 mb-2">
+                                    <i class="align-middle me-1" data-feather="phone"></i> {{ transaction.user.phone }}
+                                </dd>
+                                
+                                <dt class="col-sm-4 mb-2">Email</dt>
+                                <dd class="col-sm-8 mb-2">
+                                    {% if transaction.user.email %}
+                                        <i class="align-middle me-1" data-feather="mail"></i> {{ transaction.user.email }}
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </dd>
+                                
+                                <dd class="col-sm-12 mt-2">
+                                    <a href="{% url 'user_view' transaction.user.pk %}" class="btn btn-sm btn-outline-primary">
+                                        <i class="align-middle me-1" data-feather="eye"></i> View User Details
+                                    </a>
+                                </dd>
+                            </dl>
+                        </div>
+                        
+                        <!-- Related Object Information -->
+                        {% if related_object %}
+                        <div class="col-lg-12 mb-4">
+                            <h6 class="text-muted text-uppercase mb-3">
+                                <i class="align-middle me-1" data-feather="link"></i>
+                                Related Payment Information
+                            </h6>
+                            <dl class="row mb-0">
+                                {% if transaction.payment_type == 'deposit' %}
+                                    <dt class="col-sm-3 mb-2">Deposit ID</dt>
+                                    <dd class="col-sm-9 mb-2">
+                                        <a href="{% url 'monthly_membership_deposit_view' related_object.pk %}" class="btn btn-sm btn-outline-info">
+                                            <i class="align-middle me-1" data-feather="eye"></i> View Deposit #{{ related_object.id }}
+                                        </a>
+                                        <br><small class="text-muted">Membership: {{ related_object.membership.name }} | Amount: Rs. {{ related_object.amount|floatformat:2 }} | Status: 
+                                        {% if related_object.payment_status == 'paid' %}
+                                            <span class="badge bg-success">Paid</span>
+                                        {% else %}
+                                            <span class="badge bg-warning">Pending</span>
+                                        {% endif %}
+                                        </small>
+                                    </dd>
+                                {% elif transaction.payment_type == 'interest' %}
+                                    <dt class="col-sm-3 mb-2">Interest Payment ID</dt>
+                                    <dd class="col-sm-9 mb-2">
+                                        <a href="{% url 'loan_interest_payment_view' related_object.pk %}" class="btn btn-sm btn-outline-warning">
+                                            <i class="align-middle me-1" data-feather="eye"></i> View Interest Payment #{{ related_object.id }}
+                                        </a>
+                                        <br><small class="text-muted">Loan #{{ related_object.loan.id }} | Amount: Rs. {{ related_object.amount|floatformat:2 }} | Status: 
+                                        {% if related_object.payment_status == 'paid' %}
+                                            <span class="badge bg-success">Paid</span>
+                                        {% else %}
+                                            <span class="badge bg-warning">Pending</span>
+                                        {% endif %}
+                                        </small>
+                                    </dd>
+                                {% elif transaction.payment_type == 'principle' %}
+                                    <dt class="col-sm-3 mb-2">Principle Payment ID</dt>
+                                    <dd class="col-sm-9 mb-2">
+                                        <a href="{% url 'loan_principle_payment_view' related_object.pk %}" class="btn btn-sm btn-outline-primary">
+                                            <i class="align-middle me-1" data-feather="eye"></i> View Principle Payment #{{ related_object.id }}
+                                        </a>
+                                        <br><small class="text-muted">Loan #{{ related_object.loan.id }} | Amount: Rs. {{ related_object.amount|floatformat:2 }} | Status: 
+                                        {% if related_object.payment_status == 'paid' %}
+                                            <span class="badge bg-success">Paid</span>
+                                        {% else %}
+                                            <span class="badge bg-warning">Pending</span>
+                                        {% endif %}
+                                        </small>
+                                    </dd>
+                                {% endif %}
+                            </dl>
+                        </div>
+                        {% endif %}
+                        
+                        <!-- Gateway Response -->
+                        {% if transaction.gateway_response %}
+                        <div class="col-lg-12 mb-4">
+                            <h6 class="text-muted text-uppercase mb-3">
+                                <i class="align-middle me-1" data-feather="server"></i>
+                                Gateway Response
+                            </h6>
+                            <pre class="bg-light p-3 rounded" style="max-height: 300px; overflow-y: auto;"><code>{{ transaction.gateway_response|safe }}</code></pre>
+                        </div>
+                        {% endif %}
+                        
+                        <!-- System Information -->
+                        <div class="col-lg-6 mb-4">
+                            <h6 class="text-muted text-uppercase mb-3">
+                                <i class="align-middle me-1" data-feather="clock"></i>
+                                System Information
+                            </h6>
+                            <dl class="row mb-0">
+                                <dt class="col-sm-4 mb-2">Created At</dt>
+                                <dd class="col-sm-8 mb-2">{{ transaction.created_at|date:"F d, Y h:i A" }}</dd>
+                                
+                                <dt class="col-sm-4 mb-2">Updated At</dt>
+                                <dd class="col-sm-8 mb-2">{{ transaction.updated_at|date:"F d, Y h:i A" }}</dd>
+                            </dl>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    if (typeof feather !== 'undefined') {
+        feather.replace();
+    }
+</script>
+{% endblock %}
+

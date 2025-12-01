@@ -49,6 +49,20 @@
             </li>
 
             <li class="sidebar-item">
+                <a class="sidebar-link" href="{% url 'loan_principle_payment_list' %}">
+                    <i class="align-middle" data-feather="dollar-sign"></i> <span class="align-middle">Principle Payments</span>
+                </a>
+            </li>
+
+            {% if is_admin_board_or_staff %}
+            <li class="sidebar-item">
+                <a class="sidebar-link" href="{% url 'payment_transaction_list' %}">
+                    <i class="align-middle" data-feather="credit-card"></i> <span class="align-middle">Payment Transactions</span>
+                </a>
+            </li>
+            {% endif %}
+
+            <li class="sidebar-item">
                 <a class="sidebar-link" href="{% url 'organizational_withdrawal_list' %}">
                     <i class="align-middle" data-feather="download"></i> <span class="align-middle">Withdrawals</span>
                 </a>

@@ -48,6 +48,9 @@ from .push_notification_views import (
     push_notification_list, push_notification_create, push_notification_update,
     push_notification_delete, push_notification_view, send_push_notification_view
 )
+from .payment_transaction_views import (
+    payment_transaction_list, payment_transaction_view
+)
 
 __all__ = [
     'login_view', 'logout_view',
@@ -66,5 +69,6 @@ __all__ = [
     'board_approval_view', 'approve_loan', 'reject_loan', 'update_loan_status',
     'push_notification_list', 'push_notification_create', 'push_notification_update',
     'push_notification_delete', 'push_notification_view', 'send_push_notification_view',
+    'payment_transaction_list', 'payment_transaction_view',
 ]
 

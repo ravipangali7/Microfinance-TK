@@ -1,0 +1,72 @@
+{% extends 'core/crud/base_list.html' %}
+
+{% block page_title %}Payment Transactions{% endblock %}
+
+{% block table_header %}
+<tr>
+    <th>Transaction ID</th>
+    <th>User</th>
+    <th>Payment Type</th>
+    <th>Amount</th>
+    <th>Status</th>
+    <th>Date</th>
+    <th>Actions</th>
+</tr>
+{% endblock %}
+
+{% block table_body %}
+{% for transaction in transactions %}
+<tr>
+    <td>
+        <code>{{ transaction.client_txn_id|truncatechars:20 }}</code>
+        {% if transaction.order_id %}
+        <br><small class="text-muted">Order: {{ transaction.order_id }}</small>
+        {% endif %}
+    </td>
+    <td>{{ transaction.user.name }}<br><small class="text-muted">{{ transaction.user.phone }}</small></td>
+    <td>
+        {% if transaction.payment_type == 'deposit' %}
+            <span class="badge bg-info">Membership Deposit</span>
+        {% elif transaction.payment_type == 'interest' %}
+            <span class="badge bg-warning">Interest Payment</span>
+        {% elif transaction.payment_type == 'principle' %}
+            <span class="badge bg-primary">Principle Payment</span>
+        {% else %}
+            {{ transaction.get_payment_type_display }}
+        {% endif %}
+    </td>
+    <td>Rs. {{ transaction.amount|floatformat:2 }}</td>
+    <td>
+        {% if transaction.status == 'success' %}
+            <span class="badge bg-success">Success</span>
+        {% elif transaction.status == 'pending' %}
+            <span class="badge bg-warning">Pending</span>
+        {% elif transaction.status == 'failed' %}
+            <span class="badge bg-danger">Failed</span>
+        {% elif transaction.status == 'cancelled' %}
+            <span class="badge bg-secondary">Cancelled</span>
+        {% else %}
+            <span class="badge bg-secondary">{{ transaction.get_status_display }}</span>
+        {% endif %}
+    </td>
+    <td>
+        {% if transaction.txn_date %}
+            {{ transaction.txn_date|date:"M d, Y" }}
+        {% else %}
+            {{ transaction.created_at|date:"M d, Y" }}
+        {% endif %}
+        <br><small class="text-muted">{{ transaction.created_at|date:"h:i A" }}</small>
+    </td>
+    <td>
+        <a href="{% url 'payment_transaction_view' transaction.pk %}" class="btn btn-sm btn-info" title="View">
+            <i class="align-middle" data-feather="eye"></i>
+        </a>
+    </td>
+</tr>
+{% empty %}
+<tr>
+    <td colspan="7" class="text-center text-muted">No payment transactions found</td>
+</tr>
+{% endfor %}
+{% endblock %}
+

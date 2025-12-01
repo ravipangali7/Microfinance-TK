@@ -16,6 +16,7 @@ from app.views.admin import (
     board_approval_view, approve_loan, reject_loan, update_loan_status,
     push_notification_list, push_notification_create, push_notification_update,
     push_notification_delete, push_notification_view, send_push_notification_view,
+    payment_transaction_list, payment_transaction_view,
 )
 
 urlpatterns = [
@@ -102,5 +103,9 @@ urlpatterns = [
     path('push-notifications/<int:pk>/edit/', push_notification_update, name='push_notification_update'),
     path('push-notifications/<int:pk>/delete/', push_notification_delete, name='push_notification_delete'),
     path('push-notifications/<int:pk>/send/', send_push_notification_view, name='send_push_notification'),
+    
+    # Payment Transaction
+    path('payment-transactions/', payment_transaction_list, name='payment_transaction_list'),
+    path('payment-transactions/<int:pk>/', payment_transaction_view, name='payment_transaction_view'),
 ]
 
