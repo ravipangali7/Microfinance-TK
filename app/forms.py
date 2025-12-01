@@ -5,7 +5,7 @@ from decimal import Decimal
 from .models import (
     User, Membership, MembershipUser, MonthlyMembershipDeposit,
     Loan, LoanInterestPayment, LoanPrinciplePayment, OrganizationalWithdrawal, MySetting,
-    UserStatus, LoanStatus, PaymentStatus, WithdrawalStatus, Gender
+    UserStatus, LoanStatus, PaymentStatus, WithdrawalStatus, Gender, PushNotification
 )
 
 
@@ -347,3 +347,33 @@ class MySettingForm(forms.ModelForm):
             })
         
         return cleaned_data
+
+
+class PushNotificationForm(forms.ModelForm):
+    class Meta:
+        model = PushNotification
+        fields = ['title', 'body', 'image']
+        widgets = {
+            'title': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Enter notification title'}),
+            'body': forms.Textarea(attrs={'class': 'form-control', 'rows': 5, 'placeholder': 'Enter notification body'}),
+            'image': forms.FileInput(attrs={'class': 'form-control', 'accept': 'image/*'}),
+        }
+        labels = {
+            'title': 'Title',
+            'body': 'Body',
+            'image': 'Image (Optional)',
+        }
+    
+    def clean_title(self):
+        title = self.cleaned_data.get('title')
+        if not title or len(title.strip()) == 0:
+            raise forms.ValidationError('Title is required.')
+        if len(title) > 255:
+            raise forms.ValidationError('Title must be 255 characters or less.')
+        return title.strip()
+    
+    def clean_body(self):
+        body = self.cleaned_data.get('body')
+        if not body or len(body.strip()) == 0:
+            raise forms.ValidationError('Body is required.')
+        return body.strip()

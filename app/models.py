@@ -564,6 +564,28 @@ class PaymentTransaction(TimeStampedModel):
         return f"{self.payment_type} - {self.client_txn_id} - {self.status}"
 
 
+# Push Notification Model
+class PushNotification(TimeStampedModel):
+    title = models.CharField(max_length=255)
+    body = models.TextField()
+    image = models.ImageField(upload_to='notifications/', blank=True, null=True)
+    sent_at = models.DateTimeField(null=True, blank=True, help_text='When the notification was sent')
+    sent_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='sent_notifications', help_text='User who sent the notification')
+    
+    class Meta:
+        verbose_name = 'Push Notification'
+        verbose_name_plural = 'Push Notifications'
+        ordering = ['-created_at']
+    
+    def __str__(self):
+        return f"{self.title} - {'Sent' if self.sent_at else 'Draft'}"
+    
+    @property
+    def is_sent(self):
+        """Check if notification has been sent"""
+        return self.sent_at is not None
+
+
 # Helper function to update system balance safely
 def update_system_balance(amount, operation='add'):
     """

@@ -181,3 +181,8 @@ UPI_PAYMENT_GATEWAY_CREATE_ORDER_URL = 'https://api.ekqr.in/api/create_order'
 UPI_PAYMENT_GATEWAY_CHECK_STATUS_URL = 'https://api.ekqr.in/api/check_order_status'
 # Redirect URL will be constructed dynamically based on request
 UPI_PAYMENT_REDIRECT_URL_BASE = 'https://microfinance.sewabyapar.com'  # Update with your backend URL
+
+# Firebase Configuration
+# Path to Firebase service account JSON file
+# Download from Firebase Console: Project Settings → Service Accounts → Generate New Private Key
+FIREBASE_SERVICE_ACCOUNT_PATH = os.path.join(BASE_DIR, 'firebase-service-account.json')

@@ -3,7 +3,7 @@ from django.contrib.auth import authenticate
 from .models import (
     User, Membership, MembershipUser, MonthlyMembershipDeposit,
     Loan, LoanInterestPayment, LoanPrinciplePayment, OrganizationalWithdrawal, MySetting,
-    PaymentTransaction
+    PaymentTransaction, PushNotification
 )
 
 
@@ -306,3 +306,29 @@ class LoginSerializer(serializers.Serializer):
             raise serializers.ValidationError('Must include "phone" and "password".')
         
         return attrs
+
+
+class PushNotificationSerializer(serializers.ModelSerializer):
+    sent_by_name = serializers.SerializerMethodField()
+    image_url = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = PushNotification
+        fields = [
+            'id', 'title', 'body', 'image', 'image_url', 'sent_at', 'sent_by', 
+            'sent_by_name', 'is_sent', 'created_at', 'updated_at'
+        ]
+        read_only_fields = ['id', 'sent_at', 'sent_by', 'created_at', 'updated_at']
+    
+    def get_sent_by_name(self, obj):
+        """Return the name of the user who sent the notification"""
+        return obj.sent_by.name if obj.sent_by else None
+    
+    def get_image_url(self, obj):
+        """Return the full URL of the image if it exists"""
+        if obj.image:
+            request = self.context.get('request')
+            if request:
+                return request.build_absolute_uri(obj.image.url)
+            return obj.image.url
+        return None

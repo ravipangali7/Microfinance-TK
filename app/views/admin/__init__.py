@@ -44,6 +44,10 @@ from .board_approval_views import (
     board_approval_view, approve_loan, reject_loan,
     update_loan_status
 )
+from .push_notification_views import (
+    push_notification_list, push_notification_create, push_notification_update,
+    push_notification_delete, push_notification_view, send_push_notification_view
+)
 
 __all__ = [
     'login_view', 'logout_view',
@@ -60,5 +64,7 @@ __all__ = [
     'organizational_withdrawal_list', 'organizational_withdrawal_create', 'organizational_withdrawal_update', 'organizational_withdrawal_delete', 'organizational_withdrawal_view',
     'mysetting_view', 'mysetting_update',
     'board_approval_view', 'approve_loan', 'reject_loan', 'update_loan_status',
+    'push_notification_list', 'push_notification_create', 'push_notification_update',
+    'push_notification_delete', 'push_notification_view', 'send_push_notification_view',
 ]
 

@@ -4,7 +4,7 @@ from django.utils import timezone
 from .models import (
     User, Membership, MembershipUser, MonthlyMembershipDeposit,
     Loan, LoanInterestPayment, LoanPrinciplePayment, OrganizationalWithdrawal, MySetting,
-    PaymentTransaction,
+    PaymentTransaction, PushNotification,
     LoanStatus, PaymentStatus, WithdrawalStatus
 )
 

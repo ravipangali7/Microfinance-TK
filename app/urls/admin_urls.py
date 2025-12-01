@@ -14,6 +14,8 @@ from app.views.admin import (
     organizational_withdrawal_list, organizational_withdrawal_create, organizational_withdrawal_update, organizational_withdrawal_delete, organizational_withdrawal_view,
     mysetting_view, mysetting_update,
     board_approval_view, approve_loan, reject_loan, update_loan_status,
+    push_notification_list, push_notification_create, push_notification_update,
+    push_notification_delete, push_notification_view, send_push_notification_view,
 )
 
 urlpatterns = [
@@ -92,5 +94,13 @@ urlpatterns = [
     path('board-approval/', board_approval_view, name='board_approval'),
     path('board-approval/loans/<int:pk>/approve/', approve_loan, name='approve_loan'),
     path('board-approval/loans/<int:pk>/reject/', reject_loan, name='reject_loan'),
+    
+    # Push Notification CRUD
+    path('push-notifications/', push_notification_list, name='push_notification_list'),
+    path('push-notifications/create/', push_notification_create, name='push_notification_create'),
+    path('push-notifications/<int:pk>/', push_notification_view, name='push_notification_view'),
+    path('push-notifications/<int:pk>/edit/', push_notification_update, name='push_notification_update'),
+    path('push-notifications/<int:pk>/delete/', push_notification_delete, name='push_notification_delete'),
+    path('push-notifications/<int:pk>/send/', send_push_notification_view, name='send_push_notification'),
 ]
 

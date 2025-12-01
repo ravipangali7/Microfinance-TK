@@ -1,0 +1,194 @@
+{% extends 'core/crud/base_list.html' %}
+
+{% block page_title %}Push Notifications{% endblock %}
+
+{% block add_button %}
+{% if is_admin %}
+<a href="{% url 'push_notification_create' %}" class="btn btn-primary ms-2">
+    <i class="align-middle" data-feather="plus"></i> Create New Notification
+</a>
+{% endif %}
+{% endblock %}
+
+{% block table_header %}
+<tr>
+    <th>Title</th>
+    <th>Body</th>
+    <th>Image</th>
+    <th>Status</th>
+    <th>Sent At</th>
+    <th>Sent By</th>
+    <th>Created At</th>
+    <th>Actions</th>
+</tr>
+{% endblock %}
+
+{% block table_body %}
+{% for notification in notifications %}
+<tr>
+    <td>{{ notification.title }}</td>
+    <td>{{ notification.body|truncatewords:10 }}</td>
+    <td>
+        {% if notification.image %}
+            <img src="{{ notification.image.url }}" alt="Notification Image" style="max-width: 50px; max-height: 50px; object-fit: cover;">
+        {% else %}
+            <span class="text-muted">No image</span>
+        {% endif %}
+    </td>
+    <td>
+        {% if notification.sent_at %}
+            <span class="badge bg-success">Sent</span>
+        {% else %}
+            <span class="badge bg-warning">Draft</span>
+        {% endif %}
+    </td>
+    <td>
+        {% if notification.sent_at %}
+            {{ notification.sent_at|date:"Y-m-d H:i" }}
+        {% else %}
+            <span class="text-muted">-</span>
+        {% endif %}
+    </td>
+    <td>
+        {% if notification.sent_by %}
+            {{ notification.sent_by.name }}
+        {% else %}
+            <span class="text-muted">-</span>
+        {% endif %}
+    </td>
+    <td>{{ notification.created_at|date:"Y-m-d H:i" }}</td>
+    <td>
+        <a href="{% url 'push_notification_view' notification.pk %}" class="btn btn-sm btn-info" title="View">
+            <i class="align-middle" data-feather="eye"></i>
+        </a>
+        {% if is_admin %}
+            {% if not notification.sent_at %}
+            <a href="{% url 'push_notification_update' notification.pk %}" class="btn btn-sm btn-primary" title="Edit">
+                <i class="align-middle" data-feather="edit"></i>
+            </a>
+            <button class="btn btn-sm btn-success send-notification-btn" data-notification-id="{{ notification.pk }}" title="Send">
+                <i class="align-middle" data-feather="send"></i> Send
+            </button>
+            <button class="btn btn-sm btn-danger" onclick="deleteItem('{% url 'push_notification_delete' notification.pk %}', 'Notification: {{ notification.title }}')" title="Delete">
+                <i class="align-middle" data-feather="trash-2"></i>
+            </button>
+            {% endif %}
+        {% endif %}
+    </td>
+</tr>
+{% empty %}
+<tr>
+    <td colspan="8" class="text-center text-muted">No push notifications found</td>
+</tr>
+{% endfor %}
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+<script>
+// Helper function to get cookie value
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+// Handle send notification button clicks
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize Feather icons
+    if (typeof feather !== 'undefined') {
+        feather.replace();
+    }
+    
+    // Handle send notification button clicks
+    const sendButtons = document.querySelectorAll('.send-notification-btn');
+    sendButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const notificationId = this.getAttribute('data-notification-id');
+            
+            // Confirm send with SweetAlert
+            Swal.fire({
+                title: 'Send Notification?',
+                text: 'Are you sure you want to send this notification to all users?',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'Yes, send it!',
+                cancelButtonText: 'Cancel'
+            }).then((result) => {
+                if (!result.isConfirmed) {
+                    return;
+                }
+                
+                // Show loading
+                Swal.fire({
+                    title: 'Sending...',
+                    text: 'Please wait while we send the notification.',
+                    allowOutsideClick: false,
+                    didOpen: () => {
+                        Swal.showLoading();
+                    }
+                });
+                
+                // Create form data
+                const formData = new FormData();
+                
+                // Send AJAX request
+                fetch(`/push-notifications/${notificationId}/send/`, {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-CSRFToken': getCookie('csrftoken'),
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    credentials: 'same-origin'
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Show success message
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Success',
+                            text: data.message,
+                            timer: 3000,
+                            showConfirmButton: false
+                        });
+                        // Reload page after a short delay to reflect changes
+                        setTimeout(() => {
+                            window.location.reload();
+                        }, 1000);
+                    } else {
+                        // Show error message
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error',
+                            text: data.error || 'Failed to send notification.'
+                        });
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: 'An error occurred while sending the notification.'
+                    });
+                });
+            });
+        });
+    });
+});
+</script>
+{% endblock %}
+
