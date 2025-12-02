@@ -548,6 +548,7 @@ class PaymentTransaction(TimeStampedModel):
     status = models.CharField(max_length=20, choices=TRANSACTION_STATUS_CHOICES, default='pending')
     gateway_response = models.JSONField(null=True, blank=True, help_text='Full response from payment gateway')
     upi_txn_id = models.CharField(max_length=255, null=True, blank=True, help_text='UPI transaction ID from gateway')
+    customer_name = models.CharField(max_length=255, null=True, blank=True, help_text='Customer name from payment gateway')
     txn_date = models.DateField(null=True, blank=True, help_text='Transaction date from gateway')
     
     class Meta:

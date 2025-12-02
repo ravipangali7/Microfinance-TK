@@ -282,7 +282,7 @@ class PaymentTransactionSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'payment_type', 'related_object_id', 'user', 'client_txn_id',
             'order_id', 'amount', 'status', 'gateway_response', 'upi_txn_id',
-            'txn_date', 'created_at', 'updated_at'
+            'customer_name', 'txn_date', 'created_at', 'updated_at'
         ]
         read_only_fields = ['id', 'created_at', 'updated_at', 'gateway_response']
 

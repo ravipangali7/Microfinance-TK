@@ -205,6 +205,7 @@ class PaymentGatewayService:
         if gateway_status == 'success':
             payment_transaction.status = 'success'
             payment_transaction.upi_txn_id = status_response.get('upi_txn_id')
+            payment_transaction.customer_name = status_response.get('customer_name')
             payment_transaction.gateway_response = status_response.get('full_data', {})
             if status_response.get('txnAt'):
                 try:

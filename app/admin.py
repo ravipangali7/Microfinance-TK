@@ -214,7 +214,7 @@ class MySettingAdmin(admin.ModelAdmin):
 class PaymentTransactionAdmin(admin.ModelAdmin):
     list_display = ['client_txn_id', 'user', 'payment_type', 'amount', 'status', 'order_id', 'created_at']
     list_filter = ['payment_type', 'status', 'created_at']
-    search_fields = ['client_txn_id', 'order_id', 'upi_txn_id', 'user__name', 'user__phone']
+    search_fields = ['client_txn_id', 'order_id', 'upi_txn_id', 'customer_name', 'user__name', 'user__phone']
     readonly_fields = ['created_at', 'updated_at', 'gateway_response']
     raw_id_fields = ['user']
     date_hierarchy = 'created_at'
@@ -225,7 +225,7 @@ class PaymentTransactionAdmin(admin.ModelAdmin):
             'fields': ('user', 'payment_type', 'related_object_id', 'amount', 'status')
         }),
         ('Gateway Information', {
-            'fields': ('client_txn_id', 'order_id', 'upi_txn_id', 'txn_date')
+            'fields': ('client_txn_id', 'order_id', 'upi_txn_id', 'customer_name', 'txn_date')
         }),
         ('Additional Information', {
             'fields': ('gateway_response', 'created_at', 'updated_at')
