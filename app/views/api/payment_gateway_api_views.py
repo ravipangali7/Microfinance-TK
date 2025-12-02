@@ -7,7 +7,7 @@ from django.conf import settings
 from django.utils import timezone
 from django.db import IntegrityError
 from datetime import datetime, timedelta
-from urllib.parse import unquote
+from urllib.parse import unquote, urlparse, parse_qs
 from app.models import (
     PaymentTransaction, MonthlyMembershipDeposit, 
     LoanInterestPayment, LoanPrinciplePayment, User
@@ -293,8 +293,21 @@ def payment_callback_api(request):
     user_agent = request.META.get('HTTP_USER_AGENT', 'Unknown')
     client_ip = request.META.get('REMOTE_ADDR', 'Unknown')
     
-    # Get and decode client_txn_id (URL-encoded)
-    raw_client_txn_id = request.GET.get('client_txn_id') or request.data.get('client_txn_id')
+    # Parse URL to extract client_txn_id properly
+    # Handle malformed URLs where gateway appends additional query parameters
+    parsed_url = urlparse(request_url)
+    query_params = parse_qs(parsed_url.query)
+    
+    # Get client_txn_id from query parameters
+    # If multiple values exist (due to malformed URL), take the first one
+    raw_client_txn_id = None
+    if 'client_txn_id' in query_params:
+        # parse_qs returns a list, get first value
+        raw_client_txn_id = query_params['client_txn_id'][0] if query_params['client_txn_id'] else None
+    
+    # Fallback to request.GET or request.data if not in parsed query
+    if not raw_client_txn_id:
+        raw_client_txn_id = request.GET.get('client_txn_id') or request.data.get('client_txn_id')
     
     if not raw_client_txn_id:
         print(f"[ERROR] payment_callback_api: No client_txn_id provided")
@@ -306,17 +319,23 @@ def payment_callback_api(request):
             status=status.HTTP_400_BAD_REQUEST
         )
     
-    # URL-decode the client_txn_id
+    # Clean the client_txn_id - remove any embedded query strings
+    # Handle cases like: "deposit_27_1764698377?client_txn_id=deposit_27_1764698377"
+    # Split on '?' and take the first part
+    cleaned_raw_id = raw_client_txn_id.split('?')[0].split('&')[0]
+    
+    # URL-decode the cleaned client_txn_id
     try:
-        client_txn_id = unquote(raw_client_txn_id)
+        client_txn_id = unquote(cleaned_raw_id)
     except Exception as e:
         print(f"[ERROR] payment_callback_api: Failed to decode client_txn_id: {e}")
-        client_txn_id = raw_client_txn_id  # Use raw value as fallback
+        client_txn_id = cleaned_raw_id  # Use cleaned raw value as fallback
     
     # Log received parameters
     print(f"[INFO] payment_callback_api: Received callback")
     print(f"[INFO] Request URL: {request_url}")
     print(f"[INFO] Raw client_txn_id: {raw_client_txn_id}")
+    print(f"[INFO] Cleaned client_txn_id: {cleaned_raw_id}")
     print(f"[INFO] Decoded client_txn_id: {client_txn_id}")
     print(f"[INFO] User Agent: {user_agent}, IP: {client_ip}")
     
@@ -380,6 +399,13 @@ def payment_callback_api(request):
     
     # Return HTML page with result
     if payment_transaction.status == 'success':
+        # Create deep link to redirect to Flutter app with transaction ID
+        # Also include transaction_id in the page URL for WebView detection
+        deep_link = f"microfinance://payment/success?transaction_id={payment_transaction.id}&client_txn_id={payment_transaction.client_txn_id}"
+        
+        # Add transaction_id to the current URL for WebView to extract
+        success_url = f"{request_url.split('?')[0]}?transaction_id={payment_transaction.id}&client_txn_id={payment_transaction.client_txn_id}&status=success"
+        
         html = f'''
         <html>
         <head>
@@ -417,6 +443,34 @@ def payment_callback_api(request):
                     margin: 10px 0;
                 }}
             </style>
+            <script>
+                // Try to redirect to Flutter app using deep link
+                function redirectToApp() {{
+                    const deepLink = "{deep_link}";
+                    // Try deep link first
+                    window.location.href = deepLink;
+                    
+                    // Fallback: If deep link doesn't work, try after a short delay
+                    setTimeout(function() {{
+                        // If still on this page, try alternative redirect
+                        if (document.visibilityState === 'visible') {{
+                            // Try using intent URL for Android
+                            window.location.href = "intent://payment/success?transaction_id={payment_transaction.id}#Intent;scheme=microfinance;package=com.microfinance.app;end";
+                        }}
+                    }}, 500);
+                }}
+                
+                // Auto-redirect on page load
+                window.onload = function() {{
+                    redirectToApp();
+                }};
+                
+                // Also update the URL to include transaction_id for WebView detection
+                if (window.history && window.history.replaceState) {{
+                    const newUrl = "{success_url}";
+                    window.history.replaceState({{}}, '', newUrl);
+                }}
+            </script>
         </head>
         <body>
             <div class="container">
@@ -424,7 +478,8 @@ def payment_callback_api(request):
                 <h1>Payment Successful!</h1>
                 <p>Your payment has been processed successfully.</p>
                 <p>Transaction ID: {payment_transaction.client_txn_id}</p>
-                <p>You can close this window and return to the app.</p>
+                <p>Redirecting to app...</p>
+                <p style="font-size: 12px; color: #9CA3AF;">If you are not redirected, <a href="{deep_link}">click here</a></p>
             </div>
         </body>
         </html>
