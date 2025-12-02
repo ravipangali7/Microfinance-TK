@@ -27,14 +27,21 @@ def payment_transaction_list_api(request):
 @permission_classes([IsAuthenticated])
 def payment_transaction_detail_api(request, pk):
     """Get payment transaction details"""
-    transaction = get_object_or_404(PaymentTransaction, pk=pk)
-    
-    # Members can only see their own transactions
-    if is_member(request.user) and transaction.user.id != request.user.id:
-        return Response(
-            {'error': 'Access denied. You can only view your own payment transactions.'},
-            status=status.HTTP_403_FORBIDDEN
-        )
+    # For members, filter at query level to check access before checking existence
+    # This prevents information leakage about transactions that don't belong to them
+    if is_member(request.user):
+        # Members can only see their own transactions
+        try:
+            transaction = PaymentTransaction.objects.filter(user=request.user, pk=pk).select_related('user').get()
+        except PaymentTransaction.DoesNotExist:
+            # Return 404 for members - transaction either doesn't exist or doesn't belong to them
+            return Response(
+                {'error': 'Payment transaction not found or you do not have access to view it.'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+    else:
+        # Admin/Board/Staff can see all transactions
+        transaction = get_object_or_404(PaymentTransaction, pk=pk)
     
     serializer = PaymentTransactionSerializer(transaction)
     return Response(serializer.data, status=status.HTTP_200_OK)
