@@ -1,6 +1,7 @@
 import requests
 import json
 from decimal import Decimal
+from urllib.parse import quote
 from django.conf import settings
 from django.utils import timezone
 from datetime import datetime
@@ -50,7 +51,9 @@ class PaymentGatewayService:
         
         # Prepare request body
         # Include client_txn_id in redirect URL for callback
-        redirect_url_with_params = f"{redirect_url}?client_txn_id={client_txn_id}"
+        # URL-encode the client_txn_id to handle special characters and prevent truncation
+        encoded_client_txn_id = quote(client_txn_id, safe='')
+        redirect_url_with_params = f"{redirect_url}?client_txn_id={encoded_client_txn_id}"
         
         # Safely process phone number
         phone_cleaned = str(user.phone).replace('+', '').replace(' ', '') if user.phone else ''

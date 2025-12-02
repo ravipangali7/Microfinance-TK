@@ -6,7 +6,8 @@ from django.shortcuts import get_object_or_404
 from django.conf import settings
 from django.utils import timezone
 from django.db import IntegrityError
-from datetime import datetime
+from datetime import datetime, timedelta
+from urllib.parse import unquote
 from app.models import (
     PaymentTransaction, MonthlyMembershipDeposit, 
     LoanInterestPayment, LoanPrinciplePayment, User
@@ -287,25 +288,81 @@ def payment_callback_api(request):
     Payment callback endpoint for redirect_url
     This is called by the payment gateway after payment
     """
-    client_txn_id = request.GET.get('client_txn_id') or request.data.get('client_txn_id')
+    # Enhanced logging for debugging
+    request_url = request.build_absolute_uri()
+    user_agent = request.META.get('HTTP_USER_AGENT', 'Unknown')
+    client_ip = request.META.get('REMOTE_ADDR', 'Unknown')
     
-    if not client_txn_id:
-        # Return a simple HTML page with error
+    # Get and decode client_txn_id (URL-encoded)
+    raw_client_txn_id = request.GET.get('client_txn_id') or request.data.get('client_txn_id')
+    
+    if not raw_client_txn_id:
+        print(f"[ERROR] payment_callback_api: No client_txn_id provided")
+        print(f"[ERROR] Request URL: {request_url}")
+        print(f"[ERROR] User Agent: {user_agent}, IP: {client_ip}")
         return Response(
-            '<html><body><h1>Payment Error</h1><p>Invalid callback parameters.</p></body></html>',
+            '<html><body><h1>Payment Error</h1><p>Invalid callback parameters. No transaction ID provided.</p></body></html>',
             content_type='text/html',
             status=status.HTTP_400_BAD_REQUEST
         )
     
-    # Get payment transaction
+    # URL-decode the client_txn_id
+    try:
+        client_txn_id = unquote(raw_client_txn_id)
+    except Exception as e:
+        print(f"[ERROR] payment_callback_api: Failed to decode client_txn_id: {e}")
+        client_txn_id = raw_client_txn_id  # Use raw value as fallback
+    
+    # Log received parameters
+    print(f"[INFO] payment_callback_api: Received callback")
+    print(f"[INFO] Request URL: {request_url}")
+    print(f"[INFO] Raw client_txn_id: {raw_client_txn_id}")
+    print(f"[INFO] Decoded client_txn_id: {client_txn_id}")
+    print(f"[INFO] User Agent: {user_agent}, IP: {client_ip}")
+    
+    # Get payment transaction - try exact match first
+    payment_transaction = None
     try:
         payment_transaction = PaymentTransaction.objects.get(client_txn_id=client_txn_id)
+        print(f"[INFO] payment_callback_api: Found transaction by exact match: {payment_transaction.id}")
     except PaymentTransaction.DoesNotExist:
-        return Response(
-            '<html><body><h1>Payment Error</h1><p>Transaction not found.</p></body></html>',
-            content_type='text/html',
-            status=status.HTTP_404_NOT_FOUND
-        )
+        print(f"[WARNING] payment_callback_api: Exact match failed for client_txn_id: {client_txn_id}")
+        
+        # Fallback: Try partial match for recent transactions (within last 24 hours)
+        recent_time = timezone.now() - timedelta(hours=24)
+        partial_matches = PaymentTransaction.objects.filter(
+            client_txn_id__startswith=client_txn_id,
+            created_at__gte=recent_time
+        ).order_by('-created_at')
+        
+        if partial_matches.count() == 1:
+            payment_transaction = partial_matches.first()
+            print(f"[INFO] payment_callback_api: Found transaction by partial match: {payment_transaction.id}")
+            print(f"[INFO] Full client_txn_id: {payment_transaction.client_txn_id}")
+        elif partial_matches.count() > 1:
+            print(f"[WARNING] payment_callback_api: Multiple partial matches found ({partial_matches.count()}), using most recent")
+            payment_transaction = partial_matches.first()
+        else:
+            print(f"[ERROR] payment_callback_api: No transaction found (exact or partial match)")
+            print(f"[ERROR] Searched for: {client_txn_id}")
+            print(f"[ERROR] Recent transactions count: {PaymentTransaction.objects.filter(created_at__gte=recent_time).count()}")
+            
+            error_html = f'''
+            <html>
+            <body>
+                <h1>Payment Error</h1>
+                <p>Transaction not found.</p>
+                <p><strong>Received Transaction ID:</strong> {client_txn_id}</p>
+                <p><strong>Raw Transaction ID:</strong> {raw_client_txn_id}</p>
+                <p>Please contact support if you believe this is an error.</p>
+            </body>
+            </html>
+            '''
+            return Response(
+                error_html,
+                content_type='text/html',
+                status=status.HTTP_404_NOT_FOUND
+            )
     
     # Check payment status
     txn_date = timezone.now().strftime('%d-%m-%Y')
