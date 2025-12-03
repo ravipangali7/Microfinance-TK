@@ -293,19 +293,34 @@ def payment_callback_api(request):
     user_agent = request.META.get('HTTP_USER_AGENT', 'Unknown')
     client_ip = request.META.get('REMOTE_ADDR', 'Unknown')
     
-    # Parse URL to extract client_txn_id properly
-    # Handle malformed URLs where gateway appends additional query parameters
-    parsed_url = urlparse(request_url)
-    query_params = parse_qs(parsed_url.query)
+    # Extract client_txn_id more robustly from malformed URLs
+    # URL might be: /api/payment/callback/?client_txn_id=deposit_27_1764698377?client_txn_id=deposit_27_1764698377&txn_id=144353224
+    # We need to extract the FIRST client_txn_id value before any embedded query strings
     
-    # Get client_txn_id from query parameters
-    # If multiple values exist (due to malformed URL), take the first one
     raw_client_txn_id = None
-    if 'client_txn_id' in query_params:
-        # parse_qs returns a list, get first value
-        raw_client_txn_id = query_params['client_txn_id'][0] if query_params['client_txn_id'] else None
     
-    # Fallback to request.GET or request.data if not in parsed query
+    # Method 1: Extract from raw URL string before parsing (most reliable for malformed URLs)
+    if 'client_txn_id=' in request_url:
+        # Find the first occurrence of client_txn_id=
+        start_idx = request_url.find('client_txn_id=')
+        if start_idx != -1:
+            # Extract from 'client_txn_id=' to the next '&' or end of string
+            value_start = start_idx + len('client_txn_id=')
+            # Find the end - look for '&' (not '?' as it might be in the value itself)
+            end_idx = request_url.find('&', value_start)
+            if end_idx == -1:
+                end_idx = len(request_url)
+            raw_client_txn_id = request_url[value_start:end_idx]
+    
+    # Method 2: Fallback to standard parsing
+    if not raw_client_txn_id:
+        parsed_url = urlparse(request_url)
+        query_params = parse_qs(parsed_url.query)
+        if 'client_txn_id' in query_params:
+            # parse_qs returns a list, get first value
+            raw_client_txn_id = query_params['client_txn_id'][0] if query_params['client_txn_id'] else None
+    
+    # Method 3: Fallback to request.GET or request.data
     if not raw_client_txn_id:
         raw_client_txn_id = request.GET.get('client_txn_id') or request.data.get('client_txn_id')
     
@@ -321,8 +336,8 @@ def payment_callback_api(request):
     
     # Clean the client_txn_id - remove any embedded query strings
     # Handle cases like: "deposit_27_1764698377?client_txn_id=deposit_27_1764698377"
-    # Split on '?' and take the first part
-    cleaned_raw_id = raw_client_txn_id.split('?')[0].split('&')[0]
+    # Split on '?' and '&' to take the first part
+    cleaned_raw_id = raw_client_txn_id.split('?')[0].split('&')[0].strip()
     
     # URL-decode the cleaned client_txn_id
     try:
