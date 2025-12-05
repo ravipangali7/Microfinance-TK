@@ -95,6 +95,7 @@ class MonthlyMembershipDepositForm(forms.ModelForm):
         queryset=Membership.objects.all().order_by('name'),
         widget=forms.Select(attrs={'class': 'form-select'})
     )
+    is_custom = forms.BooleanField(required=False, initial=False, widget=forms.CheckboxInput(attrs={'class': 'form-check-input'}))
     
     class Meta:
         model = MonthlyMembershipDeposit
@@ -103,8 +104,13 @@ class MonthlyMembershipDepositForm(forms.ModelForm):
             'amount': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
             'date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
             'payment_status': forms.Select(attrs={'class': 'form-select'}, choices=PaymentStatus.choices),
-            'is_custom': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         }
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Ensure is_custom defaults to False if not provided
+        if 'is_custom' not in self.data and not self.instance.pk:
+            self.fields['is_custom'].initial = False
 
 
 class LoanForm(forms.ModelForm):
@@ -220,6 +226,7 @@ class LoanInterestPaymentForm(forms.ModelForm):
         queryset=Loan.objects.filter(status__in=[LoanStatus.APPROVED, LoanStatus.ACTIVE]).select_related('user').order_by('-applied_date'),
         widget=forms.Select(attrs={'class': 'form-select'})
     )
+    is_custom = forms.BooleanField(required=False, initial=False, widget=forms.CheckboxInput(attrs={'class': 'form-check-input'}))
     
     class Meta:
         model = LoanInterestPayment
@@ -228,7 +235,6 @@ class LoanInterestPaymentForm(forms.ModelForm):
             'amount': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
             'payment_status': forms.Select(attrs={'class': 'form-select'}, choices=PaymentStatus.choices),
             'paid_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
-            'is_custom': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         }
     
     def __init__(self, *args, **kwargs):
@@ -238,6 +244,9 @@ class LoanInterestPaymentForm(forms.ModelForm):
             from django.utils import timezone
             today = timezone.now().date()
             self.fields['paid_date'].initial = today
+        # Ensure is_custom defaults to False if not provided
+        if 'is_custom' not in self.data and not self.instance.pk:
+            self.fields['is_custom'].initial = False
 
 
 class LoanPrinciplePaymentForm(forms.ModelForm):
@@ -245,6 +254,7 @@ class LoanPrinciplePaymentForm(forms.ModelForm):
         queryset=Loan.objects.filter(status__in=[LoanStatus.APPROVED, LoanStatus.ACTIVE]).select_related('user').order_by('-applied_date'),
         widget=forms.Select(attrs={'class': 'form-select'})
     )
+    is_custom = forms.BooleanField(required=False, initial=False, widget=forms.CheckboxInput(attrs={'class': 'form-check-input'}))
     
     class Meta:
         model = LoanPrinciplePayment
@@ -253,7 +263,6 @@ class LoanPrinciplePaymentForm(forms.ModelForm):
             'amount': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
             'payment_status': forms.Select(attrs={'class': 'form-select'}, choices=PaymentStatus.choices),
             'paid_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
-            'is_custom': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         }
     
     def __init__(self, *args, **kwargs):
@@ -263,6 +272,9 @@ class LoanPrinciplePaymentForm(forms.ModelForm):
             from django.utils import timezone
             today = timezone.now().date()
             self.fields['paid_date'].initial = today
+        # Ensure is_custom defaults to False if not provided
+        if 'is_custom' not in self.data and not self.instance.pk:
+            self.fields['is_custom'].initial = False
 
 
 class OrganizationalWithdrawalForm(forms.ModelForm):

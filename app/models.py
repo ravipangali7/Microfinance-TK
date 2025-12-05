@@ -141,6 +141,10 @@ class MonthlyMembershipDeposit(TimeStampedModel):
                           'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
             self.name = f"{self.date.year} {month_names[self.date.month - 1]}"
         
+        # Ensure is_custom has a default value if not set
+        if not hasattr(self, 'is_custom') or self.is_custom is None:
+            self.is_custom = False
+        
         # Track previous state if updating
         is_new = self.pk is None
         old_status = None
@@ -326,6 +330,10 @@ class LoanInterestPayment(TimeStampedModel):
             month_names = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 
                           'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
             self.name = f"{date_to_use.year} {month_names[date_to_use.month - 1]}"
+        
+        # Ensure is_custom has a default value if not set
+        if not hasattr(self, 'is_custom') or self.is_custom is None:
+            self.is_custom = False
         
         # Track previous state if updating
         is_new = self.pk is None
@@ -544,6 +552,10 @@ class LoanPrinciplePayment(TimeStampedModel):
         # Auto-update paid_date when status changes to paid
         if self.payment_status == PaymentStatus.PAID and not self.paid_date:
             self.paid_date = timezone.now().date()
+        
+        # Ensure is_custom has a default value if not set
+        if not hasattr(self, 'is_custom') or self.is_custom is None:
+            self.is_custom = False
         
         # Track previous state if updating
         is_new = self.pk is None
