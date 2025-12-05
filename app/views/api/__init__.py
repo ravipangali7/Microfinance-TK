@@ -52,6 +52,13 @@ from .payment_transaction_api_views import (
     payment_transaction_list_api,
     payment_transaction_detail_api,
 )
+from .popup_api_views import active_popup_api
+from .support_ticket_api_views import (
+    support_ticket_list_api,
+    support_ticket_create_api,
+    support_ticket_detail_api,
+    support_ticket_reply_api,
+)
 
 __all__ = [
     'login_api', 'logout_api', 'current_user_api',
@@ -72,4 +79,9 @@ __all__ = [
     'payment_callback_api',
     'payment_transaction_list_api',
     'payment_transaction_detail_api',
+    'active_popup_api',
+    'support_ticket_list_api',
+    'support_ticket_create_api',
+    'support_ticket_detail_api',
+    'support_ticket_reply_api',
 ]

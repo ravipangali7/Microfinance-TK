@@ -4,8 +4,8 @@ from django.utils import timezone
 from .models import (
     User, Membership, MembershipUser, MonthlyMembershipDeposit,
     Loan, LoanInterestPayment, LoanPrinciplePayment, OrganizationalWithdrawal, MySetting,
-    PaymentTransaction, PushNotification,
-    LoanStatus, PaymentStatus, WithdrawalStatus
+    PaymentTransaction, PushNotification, Popup, SupportTicket, SupportTicketReply,
+    LoanStatus, PaymentStatus, WithdrawalStatus, SupportTicketStatus
 )
 
 
@@ -231,3 +231,43 @@ class PaymentTransactionAdmin(admin.ModelAdmin):
             'fields': ('gateway_response', 'created_at', 'updated_at')
         }),
     )
+
+
+@admin.register(Popup)
+class PopupAdmin(admin.ModelAdmin):
+    list_display = ['title', 'is_active', 'created_at']
+    list_filter = ['is_active', 'created_at']
+    search_fields = ['title', 'description']
+    readonly_fields = ['created_at', 'updated_at']
+    ordering = ['-created_at']
+
+
+@admin.register(SupportTicket)
+class SupportTicketAdmin(admin.ModelAdmin):
+    list_display = ['user', 'subject', 'status', 'created_at']
+    list_filter = ['status', 'created_at']
+    search_fields = ['user__name', 'user__phone', 'subject', 'message']
+    readonly_fields = ['created_at', 'updated_at']
+    raw_id_fields = ['user']
+    date_hierarchy = 'created_at'
+    ordering = ['-created_at']
+    
+    fieldsets = (
+        ('Ticket Information', {
+            'fields': ('user', 'subject', 'message', 'status')
+        }),
+        ('Additional Information', {
+            'fields': ('created_at', 'updated_at')
+        }),
+    )
+
+
+@admin.register(SupportTicketReply)
+class SupportTicketReplyAdmin(admin.ModelAdmin):
+    list_display = ['ticket', 'user', 'created_at']
+    list_filter = ['created_at']
+    search_fields = ['ticket__subject', 'user__name', 'message']
+    readonly_fields = ['created_at', 'updated_at']
+    raw_id_fields = ['ticket', 'user']
+    date_hierarchy = 'created_at'
+    ordering = ['created_at']

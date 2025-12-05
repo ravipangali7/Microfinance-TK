@@ -94,19 +94,8 @@ def create_payment_order_api(request):
             status=status.HTTP_400_BAD_REQUEST
         )
     
-    # Check for existing pending payment transactions for this payment
-    # Delete old pending transactions to ensure fresh payment gateway transaction
-    existing_pending_transactions = PaymentTransaction.objects.filter(
-        payment_type=payment_type,
-        related_object_id=payment_id,
-        user=request.user,
-        status='pending'
-    )
-    
-    if existing_pending_transactions.exists():
-        deleted_count = existing_pending_transactions.count()
-        existing_pending_transactions.delete()
-        print(f"[INFO] create_payment_order_api: Deleted {deleted_count} old pending transaction(s) for payment_type={payment_type}, payment_id={payment_id}")
+    # Note: We no longer create pending PaymentTransaction records
+    # Transaction will be created only when payment is successful
     
     # Validate user fields before processing
     if not request.user.name:
@@ -155,61 +144,12 @@ def create_payment_order_api(request):
             status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
     
-    # Create payment transaction record with exception handling
-    try:
-        payment_transaction = PaymentTransaction.objects.create(
-            payment_type=payment_type,
-            related_object_id=payment_id,
-            user=request.user,
-            client_txn_id=order_result['client_txn_id'],
-            order_id=order_result.get('order_id'),
-            amount=amount_decimal,
-            status='pending',
-            gateway_response={'create_order': order_result}
-        )
-    except IntegrityError as e:
-        # Handle duplicate client_txn_id constraint violation
-        print(f"[ERROR] create_payment_order_api: IntegrityError - Duplicate client_txn_id")
-        print(f"[ERROR] User ID: {request.user.id}, Payment Type: {payment_type}, Payment ID: {payment_id}")
-        print(f"[ERROR] Client TXN ID: {order_result.get('client_txn_id')}")
-        print(f"[ERROR] Exception: {str(e)}")
-        print(f"[ERROR] Traceback: {traceback.format_exc()}")
-        
-        # Try to get existing transaction
-        try:
-            existing_transaction = PaymentTransaction.objects.get(
-                client_txn_id=order_result['client_txn_id']
-            )
-            print(f"[INFO] Found existing transaction with same client_txn_id: {existing_transaction.id}")
-            return Response({
-                'success': True,
-                'transaction_id': existing_transaction.id,
-                'client_txn_id': existing_transaction.client_txn_id,
-                'order_id': order_result.get('order_id'),
-                'payment_url': order_result.get('payment_url'),
-                'upi_intent': order_result.get('upi_intent', {}),
-            }, status=status.HTTP_201_CREATED)
-        except PaymentTransaction.DoesNotExist:
-            return Response(
-                {'error': 'Failed to create payment transaction. Please try again.'},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
-    except Exception as e:
-        print(f"[ERROR] create_payment_order_api: Exception creating PaymentTransaction")
-        print(f"[ERROR] User ID: {request.user.id}, Payment Type: {payment_type}, Payment ID: {payment_id}")
-        print(f"[ERROR] Client TXN ID: {order_result.get('client_txn_id')}")
-        print(f"[ERROR] Exception: {str(e)}")
-        print(f"[ERROR] Traceback: {traceback.format_exc()}")
-        return Response(
-            {'error': 'Failed to create payment transaction. Please try again.'},
-            status=status.HTTP_500_INTERNAL_SERVER_ERROR
-        )
-    
-    print(f"[INFO] create_payment_order_api: Successfully created payment transaction {payment_transaction.id}")
+    # Note: We do NOT create PaymentTransaction here - it will be created only when payment is successful
+    # Return payment order details for user to proceed with payment
+    print(f"[INFO] create_payment_order_api: Payment order created successfully, client_txn_id: {order_result['client_txn_id']}")
     return Response({
         'success': True,
-        'transaction_id': payment_transaction.id,
-        'client_txn_id': payment_transaction.client_txn_id,
+        'client_txn_id': order_result['client_txn_id'],
         'order_id': order_result.get('order_id'),
         'payment_url': order_result.get('payment_url'),
         'upi_intent': order_result.get('upi_intent', {}),
@@ -237,20 +177,43 @@ def check_payment_status_api(request):
             status=status.HTTP_400_BAD_REQUEST
         )
     
-    # Get payment transaction
+    # Parse client_txn_id to get payment_type and payment_id
+    # Format: {payment_type}_{payment_id}_{timestamp}
     try:
-        payment_transaction = PaymentTransaction.objects.get(client_txn_id=client_txn_id)
-        # Verify user owns this transaction
-        if payment_transaction.user.id != request.user.id:
+        parts = client_txn_id.split('_')
+        if len(parts) >= 3:
+            payment_type = parts[0]  # deposit, interest, or principle
+            payment_id = int(parts[1])
+        else:
+            raise ValueError("Invalid client_txn_id format")
+    except (ValueError, IndexError) as e:
+        return Response(
+            {'error': 'Invalid client_txn_id format.'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+    
+    # Verify user owns this payment
+    if payment_type == 'deposit':
+        payment_obj = get_object_or_404(MonthlyMembershipDeposit, pk=payment_id)
+        if payment_obj.user.id != request.user.id:
             return Response(
                 {'error': 'Access denied.'},
                 status=status.HTTP_403_FORBIDDEN
             )
-    except PaymentTransaction.DoesNotExist:
-        return Response(
-            {'error': 'Payment transaction not found.'},
-            status=status.HTTP_404_NOT_FOUND
-        )
+    elif payment_type == 'interest':
+        payment_obj = get_object_or_404(LoanInterestPayment, pk=payment_id)
+        if payment_obj.loan.user.id != request.user.id:
+            return Response(
+                {'error': 'Access denied.'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+    else:  # principle
+        payment_obj = get_object_or_404(LoanPrinciplePayment, pk=payment_id)
+        if payment_obj.loan.user.id != request.user.id:
+            return Response(
+                {'error': 'Access denied.'},
+                status=status.HTTP_403_FORBIDDEN
+            )
     
     # Check status from gateway
     status_result = PaymentGatewayService.check_payment_status(
@@ -261,20 +224,35 @@ def check_payment_status_api(request):
     if not status_result.get('success'):
         return Response({
             'success': False,
-            'status': payment_transaction.status,
+            'status': 'unknown',
             'error': status_result.get('error', 'Failed to check payment status'),
         }, status=status.HTTP_200_OK)
     
-    # Update payment status if successful
+    # Create PaymentTransaction only if payment is successful
     gateway_status = status_result.get('status', '').lower()
+    payment_transaction = None
+    
     if gateway_status == 'success':
-        PaymentGatewayService.update_payment_status(payment_transaction, status_result)
-        payment_transaction.refresh_from_db()
+        # Check if transaction already exists
+        try:
+            payment_transaction = PaymentTransaction.objects.get(client_txn_id=client_txn_id)
+            # Update existing transaction
+            PaymentGatewayService.update_payment_status(payment_transaction, status_result)
+            payment_transaction.refresh_from_db()
+        except PaymentTransaction.DoesNotExist:
+            # Create new transaction on success
+            payment_transaction = PaymentGatewayService.create_payment_transaction_on_success(
+                client_txn_id=client_txn_id,
+                payment_type=payment_type,
+                payment_id=payment_id,
+                status_response=status_result
+            )
     
     return Response({
         'success': True,
         'status': gateway_status,
-        'transaction_status': payment_transaction.status,
+        'transaction_status': payment_transaction.status if payment_transaction else gateway_status,
+        'transaction_id': payment_transaction.id if payment_transaction else None,
         'order_id': status_result.get('order_id'),
         'upi_txn_id': status_result.get('upi_txn_id'),
         'amount': float(status_result.get('amount', 0)),
@@ -354,66 +332,62 @@ def payment_callback_api(request):
     print(f"[INFO] Decoded client_txn_id: {client_txn_id}")
     print(f"[INFO] User Agent: {user_agent}, IP: {client_ip}")
     
-    # Get payment transaction - try exact match first
-    payment_transaction = None
+    # Parse client_txn_id to get payment_type and payment_id
+    # Format: {payment_type}_{payment_id}_{timestamp}
     try:
-        payment_transaction = PaymentTransaction.objects.get(client_txn_id=client_txn_id)
-        print(f"[INFO] payment_callback_api: Found transaction by exact match: {payment_transaction.id}")
-    except PaymentTransaction.DoesNotExist:
-        print(f"[WARNING] payment_callback_api: Exact match failed for client_txn_id: {client_txn_id}")
-        
-        # Fallback: Try partial match for recent transactions (within last 24 hours)
-        recent_time = timezone.now() - timedelta(hours=24)
-        partial_matches = PaymentTransaction.objects.filter(
-            client_txn_id__startswith=client_txn_id,
-            created_at__gte=recent_time
-        ).order_by('-created_at')
-        
-        if partial_matches.count() == 1:
-            payment_transaction = partial_matches.first()
-            print(f"[INFO] payment_callback_api: Found transaction by partial match: {payment_transaction.id}")
-            print(f"[INFO] Full client_txn_id: {payment_transaction.client_txn_id}")
-        elif partial_matches.count() > 1:
-            print(f"[WARNING] payment_callback_api: Multiple partial matches found ({partial_matches.count()}), using most recent")
-            payment_transaction = partial_matches.first()
+        parts = client_txn_id.split('_')
+        if len(parts) >= 3:
+            payment_type = parts[0]  # deposit, interest, or principle
+            payment_id = int(parts[1])
         else:
-            print(f"[ERROR] payment_callback_api: No transaction found (exact or partial match)")
-            print(f"[ERROR] Searched for: {client_txn_id}")
-            print(f"[ERROR] Recent transactions count: {PaymentTransaction.objects.filter(created_at__gte=recent_time).count()}")
-            
-            error_html = f'''
-            <html>
-            <body>
-                <h1>Payment Error</h1>
-                <p>Transaction not found.</p>
-                <p><strong>Received Transaction ID:</strong> {client_txn_id}</p>
-                <p><strong>Raw Transaction ID:</strong> {raw_client_txn_id}</p>
-                <p>Please contact support if you believe this is an error.</p>
-            </body>
-            </html>
-            '''
-            return Response(
-                error_html,
-                content_type='text/html',
-                status=status.HTTP_404_NOT_FOUND
-            )
+            raise ValueError("Invalid client_txn_id format")
+    except (ValueError, IndexError) as e:
+        print(f"[ERROR] payment_callback_api: Failed to parse client_txn_id: {e}")
+        error_html = f'''
+        <html>
+        <body>
+            <h1>Payment Error</h1>
+            <p>Invalid transaction ID format.</p>
+            <p><strong>Received Transaction ID:</strong> {client_txn_id}</p>
+            <p>Please contact support if you believe this is an error.</p>
+        </body>
+        </html>
+        '''
+        return Response(
+            error_html,
+            content_type='text/html',
+            status=status.HTTP_400_BAD_REQUEST
+        )
     
-    # Check payment status
+    # Check payment status from gateway
     txn_date = timezone.now().strftime('%d-%m-%Y')
     status_result = PaymentGatewayService.check_payment_status(
         client_txn_id=client_txn_id,
         txn_date=txn_date
     )
     
-    # Update payment status if successful
+    # Create PaymentTransaction only if payment is successful
+    payment_transaction = None
     if status_result.get('success'):
         gateway_status = status_result.get('status', '').lower()
         if gateway_status == 'success':
-            PaymentGatewayService.update_payment_status(payment_transaction, status_result)
-            payment_transaction.refresh_from_db()
+            # Check if transaction already exists
+            try:
+                payment_transaction = PaymentTransaction.objects.get(client_txn_id=client_txn_id)
+                # Update existing transaction
+                PaymentGatewayService.update_payment_status(payment_transaction, status_result)
+                payment_transaction.refresh_from_db()
+            except PaymentTransaction.DoesNotExist:
+                # Create PaymentTransaction and update related payment object
+                payment_transaction = PaymentGatewayService.create_payment_transaction_on_success(
+                    client_txn_id=client_txn_id,
+                    payment_type=payment_type,
+                    payment_id=payment_id,
+                    status_response=status_result
+                )
     
     # Return HTML page with result
-    if payment_transaction.status == 'success':
+    if payment_transaction and payment_transaction.status == 'success':
         # Create deep link to redirect to Flutter app with transaction ID
         # Also include transaction_id in the page URL for WebView detection
         deep_link = f"microfinance://payment/success?transaction_id={payment_transaction.id}&client_txn_id={payment_transaction.client_txn_id}"
@@ -500,6 +474,7 @@ def payment_callback_api(request):
         </html>
         '''
     else:
+        # Payment is pending or failed - no transaction created
         html = f'''
         <html>
         <head>
@@ -543,7 +518,7 @@ def payment_callback_api(request):
                 <div class="pending-icon">⏳</div>
                 <h1>Payment Pending</h1>
                 <p>Your payment is being processed.</p>
-                <p>Transaction ID: {payment_transaction.client_txn_id}</p>
+                <p>Transaction ID: {client_txn_id}</p>
                 <p>Please check back in a few moments or return to the app.</p>
             </div>
         </body>

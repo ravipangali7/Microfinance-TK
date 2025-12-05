@@ -188,6 +188,122 @@ class PaymentGatewayService:
             }
     
     @staticmethod
+    def create_payment_transaction_on_success(client_txn_id, payment_type, payment_id, status_response):
+        """
+        Create PaymentTransaction when gateway payment is successful
+        
+        Args:
+            client_txn_id: Client transaction ID
+            payment_type: 'deposit', 'interest', or 'principle'
+            payment_id: ID of related payment object
+            status_response: Response from check_payment_status with success status
+        
+        Returns:
+            PaymentTransaction instance
+        """
+        # Get the related payment object to get user and amount
+        user = None
+        amount = Decimal('0.00')
+        
+        if payment_type == 'deposit':
+            try:
+                deposit = MonthlyMembershipDeposit.objects.get(pk=payment_id)
+                user = deposit.user
+                amount = deposit.amount
+            except MonthlyMembershipDeposit.DoesNotExist:
+                print(f"[ERROR] create_payment_transaction_on_success: Deposit {payment_id} not found")
+                return None
+        elif payment_type == 'interest':
+            try:
+                interest_payment = LoanInterestPayment.objects.get(pk=payment_id)
+                user = interest_payment.loan.user
+                amount = interest_payment.amount
+            except LoanInterestPayment.DoesNotExist:
+                print(f"[ERROR] create_payment_transaction_on_success: Interest payment {payment_id} not found")
+                return None
+        elif payment_type == 'principle':
+            try:
+                principle_payment = LoanPrinciplePayment.objects.get(pk=payment_id)
+                user = principle_payment.loan.user
+                amount = principle_payment.amount
+            except LoanPrinciplePayment.DoesNotExist:
+                print(f"[ERROR] create_payment_transaction_on_success: Principle payment {payment_id} not found")
+                return None
+        
+        if not user:
+            print(f"[ERROR] create_payment_transaction_on_success: Could not determine user for payment_type={payment_type}, payment_id={payment_id}")
+            return None
+        
+        # Create PaymentTransaction with success status
+        try:
+            payment_transaction = PaymentTransaction.objects.create(
+                payment_type=payment_type,
+                related_object_id=payment_id,
+                user=user,
+                client_txn_id=client_txn_id,
+                order_id=status_response.get('order_id'),
+                amount=amount,
+                status='success',
+                payment_method='gateway',
+                upi_txn_id=status_response.get('upi_txn_id'),
+                customer_name=status_response.get('customer_name'),
+                gateway_response=status_response.get('full_data', {}),
+            )
+            
+            # Set transaction date
+            if status_response.get('txnAt'):
+                try:
+                    from datetime import datetime
+                    txn_date = datetime.strptime(status_response['txnAt'], '%Y-%m-%d').date()
+                    payment_transaction.txn_date = txn_date
+                except:
+                    payment_transaction.txn_date = timezone.now().date()
+            else:
+                payment_transaction.txn_date = timezone.now().date()
+            
+            payment_transaction.save()
+            
+            # Update the related payment object to 'paid'
+            if payment_type == 'deposit':
+                try:
+                    deposit = MonthlyMembershipDeposit.objects.get(pk=payment_id)
+                    deposit.payment_status = 'paid'
+                    if not deposit.paid_date:
+                        deposit.paid_date = payment_transaction.txn_date
+                    deposit.save()
+                except MonthlyMembershipDeposit.DoesNotExist:
+                    pass
+            elif payment_type == 'interest':
+                try:
+                    interest_payment = LoanInterestPayment.objects.get(pk=payment_id)
+                    interest_payment.payment_status = 'paid'
+                    if not interest_payment.paid_date:
+                        interest_payment.paid_date = payment_transaction.txn_date
+                    interest_payment.save()
+                except LoanInterestPayment.DoesNotExist:
+                    pass
+            elif payment_type == 'principle':
+                try:
+                    principle_payment = LoanPrinciplePayment.objects.get(pk=payment_id)
+                    principle_payment.payment_status = 'paid'
+                    if not principle_payment.paid_date:
+                        principle_payment.paid_date = payment_transaction.txn_date
+                    principle_payment.save()
+                except LoanPrinciplePayment.DoesNotExist:
+                    pass
+            
+            print(f"[INFO] create_payment_transaction_on_success: Created PaymentTransaction {payment_transaction.id} for {payment_type} {payment_id}")
+            return payment_transaction
+            
+        except Exception as e:
+            import traceback
+            print(f"[ERROR] create_payment_transaction_on_success: Exception creating PaymentTransaction")
+            print(f"[ERROR] Payment Type: {payment_type}, Payment ID: {payment_id}")
+            print(f"[ERROR] Exception: {str(e)}")
+            print(f"[ERROR] Traceback: {traceback.format_exc()}")
+            return None
+    
+    @staticmethod
     def update_payment_status(payment_transaction, status_response):
         """
         Update payment status based on gateway response

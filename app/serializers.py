@@ -3,7 +3,7 @@ from django.contrib.auth import authenticate
 from .models import (
     User, Membership, MembershipUser, MonthlyMembershipDeposit,
     Loan, LoanInterestPayment, LoanPrinciplePayment, OrganizationalWithdrawal, MySetting,
-    PaymentTransaction, PushNotification
+    PaymentTransaction, PushNotification, Popup, SupportTicket, SupportTicketReply
 )
 
 
@@ -332,3 +332,77 @@ class PushNotificationSerializer(serializers.ModelSerializer):
                 return request.build_absolute_uri(obj.image.url)
             return obj.image.url
         return None
+
+
+class PopupSerializer(serializers.ModelSerializer):
+    image_url = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = Popup
+        fields = [
+            'id', 'title', 'description', 'image', 'image_url', 'is_active',
+            'created_at', 'updated_at'
+        ]
+        read_only_fields = ['id', 'created_at', 'updated_at']
+    
+    def get_image_url(self, obj):
+        """Return the full URL of the image if it exists"""
+        if obj.image:
+            request = self.context.get('request')
+            if request:
+                return request.build_absolute_uri(obj.image.url)
+            return obj.image.url
+        return None
+
+
+class SupportTicketReplySerializer(serializers.ModelSerializer):
+    user = UserSerializer(read_only=True)
+    user_id = serializers.IntegerField(write_only=True, required=False)
+    image_url = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = SupportTicketReply
+        fields = [
+            'id', 'ticket', 'user', 'user_id', 'message', 'image', 'image_url',
+            'created_at', 'updated_at'
+        ]
+        read_only_fields = ['id', 'created_at', 'updated_at']
+    
+    def get_image_url(self, obj):
+        """Return the full URL of the image if it exists"""
+        if obj.image:
+            request = self.context.get('request')
+            if request:
+                return request.build_absolute_uri(obj.image.url)
+            return obj.image.url
+        return None
+    
+    def create(self, validated_data):
+        # Auto-set user_id from request if not provided
+        if 'user_id' not in validated_data or validated_data.get('user_id') is None:
+            request = self.context.get('request')
+            if request and request.user:
+                validated_data['user_id'] = request.user.id
+        return super().create(validated_data)
+
+
+class SupportTicketSerializer(serializers.ModelSerializer):
+    user = UserSerializer(read_only=True)
+    user_id = serializers.IntegerField(write_only=True, required=False)
+    replies = SupportTicketReplySerializer(many=True, read_only=True)
+    
+    class Meta:
+        model = SupportTicket
+        fields = [
+            'id', 'user', 'user_id', 'subject', 'message', 'status',
+            'replies', 'created_at', 'updated_at'
+        ]
+        read_only_fields = ['id', 'created_at', 'updated_at']
+    
+    def create(self, validated_data):
+        # Auto-set user_id from request if not provided
+        if 'user_id' not in validated_data or validated_data.get('user_id') is None:
+            request = self.context.get('request')
+            if request and request.user:
+                validated_data['user_id'] = request.user.id
+        return super().create(validated_data)

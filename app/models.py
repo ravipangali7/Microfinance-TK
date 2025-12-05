@@ -658,6 +658,62 @@ class PushNotification(TimeStampedModel):
         return self.sent_at is not None
 
 
+# Popup Model
+class Popup(TimeStampedModel):
+    title = models.CharField(max_length=255)
+    description = models.TextField()
+    image = models.ImageField(upload_to='popups/', blank=True, null=True)
+    is_active = models.BooleanField(default=True)
+    
+    class Meta:
+        verbose_name = 'Popup'
+        verbose_name_plural = 'Popups'
+        ordering = ['-created_at']
+    
+    def __str__(self):
+        return f"{self.title} - {'Active' if self.is_active else 'Inactive'}"
+
+
+# Support Ticket Status Choices
+class SupportTicketStatus(models.TextChoices):
+    PENDING = 'pending', 'Pending'
+    OPEN = 'open', 'Open'
+    RESOLVED = 'resolved', 'Resolved'
+    CLOSED = 'closed', 'Closed'
+
+
+# Support Ticket Model
+class SupportTicket(TimeStampedModel):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='support_tickets')
+    subject = models.CharField(max_length=255)
+    message = models.TextField()
+    status = models.CharField(max_length=20, choices=SupportTicketStatus.choices, default=SupportTicketStatus.PENDING)
+    
+    class Meta:
+        verbose_name = 'Support Ticket'
+        verbose_name_plural = 'Support Tickets'
+        ordering = ['-created_at']
+    
+    def __str__(self):
+        return f"{self.user.name} - {self.subject} - {self.status}"
+
+
+# Support Ticket Reply Model
+class SupportTicketReply(TimeStampedModel):
+    ticket = models.ForeignKey(SupportTicket, on_delete=models.CASCADE, related_name='replies')
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='support_ticket_replies')
+    message = models.TextField()
+    image = models.ImageField(upload_to='support_tickets/', blank=True, null=True)
+    
+    class Meta:
+        verbose_name = 'Support Ticket Reply'
+        verbose_name_plural = 'Support Ticket Replies'
+        ordering = ['created_at']
+    
+    def __str__(self):
+        return f"Reply to {self.ticket.subject} by {self.user.name}"
+
+
 # Helper function to update system balance safely
 def update_system_balance(amount, operation='add'):
     """

@@ -33,6 +33,13 @@ from app.views.api import (
     # Payment Transactions
     payment_transaction_list_api,
     payment_transaction_detail_api,
+    # Popups
+    active_popup_api,
+    # Support Tickets
+    support_ticket_list_api,
+    support_ticket_create_api,
+    support_ticket_detail_api,
+    support_ticket_reply_api,
 )
 
 urlpatterns = [
@@ -125,4 +132,13 @@ urlpatterns = [
     # Payment Transactions
     path('payment-transactions/', payment_transaction_list_api, name='api_payment_transaction_list'),
     path('payment-transactions/<int:pk>/', payment_transaction_detail_api, name='api_payment_transaction_detail'),
+    
+    # Popups
+    path('popups/active/', active_popup_api, name='api_active_popup'),
+    
+    # Support Tickets
+    path('support-tickets/', support_ticket_list_api, name='api_support_ticket_list'),
+    path('support-tickets/create/', support_ticket_create_api, name='api_support_ticket_create'),
+    path('support-tickets/<int:pk>/', support_ticket_detail_api, name='api_support_ticket_detail'),
+    path('support-tickets/<int:pk>/replies/', support_ticket_reply_api, name='api_support_ticket_reply'),
 ]
