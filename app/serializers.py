@@ -280,7 +280,7 @@ class PaymentTransactionSerializer(serializers.ModelSerializer):
     class Meta:
         model = PaymentTransaction
         fields = [
-            'id', 'payment_type', 'related_object_id', 'user', 'client_txn_id',
+            'id', 'payment_type', 'payment_method', 'related_object_id', 'user', 'client_txn_id',
             'order_id', 'amount', 'status', 'gateway_response', 'upi_txn_id',
             'customer_name', 'txn_date', 'created_at', 'updated_at'
         ]

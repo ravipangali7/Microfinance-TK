@@ -178,6 +178,38 @@ class MonthlyMembershipDeposit(TimeStampedModel):
                     update_system_balance(difference, operation='add')
                 else:
                     update_system_balance(abs(difference), operation='subtract')
+        
+        # Create cash payment transaction when payment is marked as paid
+        # Only create transaction when status is PAID (never for pending)
+        if self.payment_status == PaymentStatus.PAID:
+            # Check if status changed to paid (new record with paid status, or status changed from non-paid to paid)
+            should_create_transaction = False
+            if is_new:
+                should_create_transaction = True
+            elif old_status != PaymentStatus.PAID:
+                should_create_transaction = True
+            
+            if should_create_transaction:
+                # Delete any existing PaymentTransaction for this deposit
+                PaymentTransaction.objects.filter(
+                    payment_type='deposit',
+                    related_object_id=self.pk
+                ).delete()
+                
+                # Create new cash payment transaction
+                timestamp = int(timezone.now().timestamp())
+                client_txn_id = f"cash_deposit_{self.pk}_{timestamp}"
+                PaymentTransaction.objects.create(
+                    payment_type='deposit',
+                    related_object_id=self.pk,
+                    user=self.user,
+                    payment_method='cash',
+                    client_txn_id=client_txn_id,
+                    amount=self.amount,
+                    status='success',
+                    txn_date=self.paid_date if self.paid_date else timezone.now().date(),
+                    customer_name=self.user.name if self.user.name else None
+                )
 
     def delete(self, *args, **kwargs):
         # If deposit was paid, subtract from balance
@@ -331,6 +363,38 @@ class LoanInterestPayment(TimeStampedModel):
                     update_system_balance(difference, operation='add')
                 else:
                     update_system_balance(abs(difference), operation='subtract')
+        
+        # Create cash payment transaction when payment is marked as paid
+        # Only create transaction when status is PAID (never for pending)
+        if self.payment_status == PaymentStatus.PAID:
+            # Check if status changed to paid (new record with paid status, or status changed from non-paid to paid)
+            should_create_transaction = False
+            if is_new:
+                should_create_transaction = True
+            elif old_status != PaymentStatus.PAID:
+                should_create_transaction = True
+            
+            if should_create_transaction:
+                # Delete any existing PaymentTransaction for this interest payment
+                PaymentTransaction.objects.filter(
+                    payment_type='interest',
+                    related_object_id=self.pk
+                ).delete()
+                
+                # Create new cash payment transaction
+                timestamp = int(timezone.now().timestamp())
+                client_txn_id = f"cash_interest_{self.pk}_{timestamp}"
+                PaymentTransaction.objects.create(
+                    payment_type='interest',
+                    related_object_id=self.pk,
+                    user=self.loan.user,
+                    payment_method='cash',
+                    client_txn_id=client_txn_id,
+                    amount=self.amount,
+                    status='success',
+                    txn_date=self.paid_date if self.paid_date else timezone.now().date(),
+                    customer_name=self.loan.user.name if self.loan.user.name else None
+                )
 
     def delete(self, *args, **kwargs):
         # If payment was paid, subtract from balance
@@ -516,6 +580,38 @@ class LoanPrinciplePayment(TimeStampedModel):
                     update_system_balance(difference, operation='add')
                 else:
                     update_system_balance(abs(difference), operation='subtract')
+        
+        # Create cash payment transaction when payment is marked as paid
+        # Only create transaction when status is PAID (never for pending)
+        if self.payment_status == PaymentStatus.PAID:
+            # Check if status changed to paid (new record with paid status, or status changed from non-paid to paid)
+            should_create_transaction = False
+            if is_new:
+                should_create_transaction = True
+            elif old_status != PaymentStatus.PAID:
+                should_create_transaction = True
+            
+            if should_create_transaction:
+                # Delete any existing PaymentTransaction for this principle payment
+                PaymentTransaction.objects.filter(
+                    payment_type='principle',
+                    related_object_id=self.pk
+                ).delete()
+                
+                # Create new cash payment transaction
+                timestamp = int(timezone.now().timestamp())
+                client_txn_id = f"cash_principle_{self.pk}_{timestamp}"
+                PaymentTransaction.objects.create(
+                    payment_type='principle',
+                    related_object_id=self.pk,
+                    user=self.loan.user,
+                    payment_method='cash',
+                    client_txn_id=client_txn_id,
+                    amount=self.amount,
+                    status='success',
+                    txn_date=self.paid_date if self.paid_date else timezone.now().date(),
+                    customer_name=self.loan.user.name if self.loan.user.name else None
+                )
 
     def delete(self, *args, **kwargs):
         # If payment was paid, subtract from balance
@@ -532,6 +628,11 @@ class PaymentTransaction(TimeStampedModel):
         ('principle', 'Principle Payment'),
     ]
     
+    PAYMENT_METHOD_CHOICES = [
+        ('cash', 'Cash'),
+        ('gateway', 'Gateway/UPI'),
+    ]
+    
     TRANSACTION_STATUS_CHOICES = [
         ('pending', 'Pending'),
         ('success', 'Success'),
@@ -546,6 +647,7 @@ class PaymentTransaction(TimeStampedModel):
     order_id = models.BigIntegerField(null=True, blank=True, help_text='Order ID from payment gateway')
     amount = models.DecimalField(max_digits=15, decimal_places=2)
     status = models.CharField(max_length=20, choices=TRANSACTION_STATUS_CHOICES, default='pending')
+    payment_method = models.CharField(max_length=20, choices=PAYMENT_METHOD_CHOICES, default='gateway', help_text='Payment method: cash or gateway/UPI')
     gateway_response = models.JSONField(null=True, blank=True, help_text='Full response from payment gateway')
     upi_txn_id = models.CharField(max_length=255, null=True, blank=True, help_text='UPI transaction ID from gateway')
     customer_name = models.CharField(max_length=255, null=True, blank=True, help_text='Customer name from payment gateway')
