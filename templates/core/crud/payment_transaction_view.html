@@ -72,6 +72,19 @@
                                     {% endif %}
                                 </dd>
                                 
+                                <dt class="col-sm-5 mb-2">Payment Method</dt>
+                                <dd class="col-sm-7 mb-2">
+                                    {% if transaction.payment_method == 'cash' %}
+                                        <span class="badge bg-success fs-6">
+                                            <i class="align-middle me-1" data-feather="dollar-sign"></i> Cash
+                                        </span>
+                                    {% else %}
+                                        <span class="badge bg-primary fs-6">
+                                            <i class="align-middle me-1" data-feather="credit-card"></i> Gateway/UPI
+                                        </span>
+                                    {% endif %}
+                                </dd>
+                                
                                 <dt class="col-sm-5 mb-2">Amount</dt>
                                 <dd class="col-sm-7 mb-2">
                                     <span class="fs-4 fw-bold text-success">Rs. {{ transaction.amount|floatformat:2 }}</span>
