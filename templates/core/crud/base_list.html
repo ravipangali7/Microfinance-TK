@@ -2,6 +2,39 @@
 
 {% block extra_js %}
 <script src="/static/core/js/crud.js"></script>
+<!-- Flatpickr for date range picker -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize date range picker if element exists
+    const dateRangeInput = document.getElementById('date_range');
+    if (dateRangeInput) {
+        let defaultDates = null;
+        if (dateRangeInput.value) {
+            const parts = dateRangeInput.value.split(' to ');
+            if (parts.length === 2) {
+                defaultDates = [parts[0].trim(), parts[1].trim()];
+            }
+        }
+        
+        const flatpickrInstance = flatpickr(dateRangeInput, {
+            mode: "range",
+            dateFormat: "Y-m-d",
+            defaultDate: defaultDates,
+            allowInput: true,
+            onChange: function(selectedDates, dateStr, instance) {
+                // Format as "YYYY-MM-DD to YYYY-MM-DD" when both dates are selected
+                if (selectedDates.length === 2) {
+                    const start = selectedDates[0].toISOString().split('T')[0];
+                    const end = selectedDates[1].toISOString().split('T')[0];
+                    dateRangeInput.value = start + ' to ' + end;
+                }
+            }
+        });
+    }
+});
+</script>
 {% endblock %}
 
 {% block content %}
@@ -11,6 +44,41 @@
         {% block add_button %}{% endblock %}
     </div>
 
+    <!-- Stats Cards Section -->
+    {% block stats_cards %}{% endblock %}
+
+    <!-- Filter Section -->
+    <div class="card mb-3">
+        <div class="card-header">
+            <h5 class="card-title mb-0">
+                <i class="align-middle me-1" data-feather="filter"></i> Filters
+            </h5>
+        </div>
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                {% block filters %}
+                <div class="col-md-3">
+                    <label class="form-label">Search</label>
+                    <input type="text" name="search" class="form-control" placeholder="Search..." value="{{ request.GET.search }}">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Date Range</label>
+                    <input type="text" name="date_range" id="date_range" class="form-control" placeholder="Select date range" value="{{ request.GET.date_range }}">
+                </div>
+                {% endblock %}
+                <div class="col-md-12">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="align-middle me-1" data-feather="search"></i> Filter
+                    </button>
+                    <a href="{% block clear_filters_url %}{{ request.path }}{% endblock %}" class="btn btn-secondary">
+                        <i class="align-middle me-1" data-feather="x"></i> Clear
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Data Table -->
     <div class="row">
         <div class="col-12">
             <div class="card">
@@ -18,9 +86,6 @@
                     <h5 class="card-title mb-0">{{ page_title|default:"List" }}</h5>
                 </div>
                 <div class="card-body">
-                    <div class="mb-3">
-                        <input type="text" class="form-control" id="searchInput" placeholder="Search..." onkeyup="filterTable()">
-                    </div>
                     <div class="table-responsive">
                         <table class="table table-hover my-0" id="dataTable">
                             <thead>
@@ -36,29 +101,5 @@
         </div>
     </div>
 </div>
-
-<script>
-function filterTable() {
-    const input = document.getElementById("searchInput");
-    const filter = input.value.toLowerCase();
-    const table = document.getElementById("dataTable");
-    const tr = table.getElementsByTagName("tr");
-
-    for (let i = 1; i < tr.length; i++) {
-        const td = tr[i].getElementsByTagName("td");
-        let found = false;
-        for (let j = 0; j < td.length; j++) {
-            if (td[j]) {
-                const txtValue = td[j].textContent || td[j].innerText;
-                if (txtValue.toLowerCase().indexOf(filter) > -1) {
-                    found = true;
-                    break;
-                }
-            }
-        }
-        tr[i].style.display = found ? "" : "none";
-    }
-}
-</script>
 {% endblock %}
 

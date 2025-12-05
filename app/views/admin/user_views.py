@@ -3,9 +3,13 @@ from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from app.models import User, Membership, MembershipUser
+from app.models import User, Membership, MembershipUser, UserStatus
 from app.forms import UserForm
 from .helpers import is_admin, is_admin_or_board, is_member, get_role_context
+from .filter_helpers import (
+    get_default_date_range, parse_date_range, format_date_range,
+    apply_text_search, apply_date_filter
+)
 
 
 @login_required
@@ -15,8 +19,59 @@ def user_list(request):
         messages.error(request, 'Access denied. Only Admin and Board members can view users.')
         return redirect('dashboard')
     
-    users = User.objects.all().order_by('-created_at')
-    context = {'users': users}
+    users = User.objects.all()
+    
+    # Apply filters
+    search = request.GET.get('search', '')
+    date_range_str = request.GET.get('date_range', '')
+    status = request.GET.get('status', '')
+    
+    # Parse date range
+    start_date, end_date = None, None
+    if date_range_str:
+        date_range = parse_date_range(date_range_str)
+        if date_range:
+            start_date, end_date = date_range
+    else:
+        # Default to last 1 month
+        start_date, end_date = get_default_date_range()
+        date_range_str = format_date_range(start_date, end_date)
+    
+    # Apply text search
+    if search:
+        users = apply_text_search(users, search, ['name', 'phone', 'email'])
+    
+    # Apply status filter
+    if status:
+        users = users.filter(status=status)
+    
+    # Apply date filter (on joined_date)
+    users = apply_date_filter(users, 'joined_date', start_date, end_date)
+    
+    # Order by
+    users = users.order_by('-created_at')
+    
+    # Calculate stats from filtered queryset
+    total_users = users.count()
+    active_count = users.filter(status=UserStatus.ACTIVE).count()
+    freeze_count = users.filter(status=UserStatus.FREEZE).count()
+    inactive_count = users.filter(status=UserStatus.INACTIVE).count()
+    
+    context = {
+        'users': users,
+        'stats': {
+            'total': total_users,
+            'active': active_count,
+            'freeze': freeze_count,
+            'inactive': inactive_count,
+        },
+        'filters': {
+            'search': search,
+            'date_range': date_range_str,
+            'status': status,
+        },
+        'all_statuses': UserStatus.choices,
+    }
     context.update(get_role_context(request))
     return render(request, 'core/crud/user_list.html', context)
 

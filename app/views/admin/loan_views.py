@@ -10,16 +10,90 @@ from .helpers import is_admin, is_member, get_role_context
 
 @login_required
 def loan_list(request):
+    from decimal import Decimal
+    from app.models import LoanStatus
+    from .filter_helpers import (
+        get_default_date_range, parse_date_range, format_date_range,
+        apply_text_search, apply_date_filter, apply_amount_range_filter
+    )
+    
     user = request.user
     # Members can only see their own loans
     if is_member(user):
-        loans = Loan.objects.filter(user=user).select_related('user', 'action_by').order_by('-applied_date', '-created_at')
+        loans = Loan.objects.filter(user=user).select_related('user', 'action_by')
     else:
-        loans = Loan.objects.select_related('user', 'action_by').order_by('-applied_date', '-created_at')
+        loans = Loan.objects.select_related('user', 'action_by')
+    
+    # Apply filters
+    search = request.GET.get('search', '')
+    user_id = request.GET.get('user_id', '')
+    status = request.GET.get('status', '')
+    from_amount = request.GET.get('from_amount', '')
+    to_amount = request.GET.get('to_amount', '')
+    date_range_str = request.GET.get('date_range', '')
+    
+    # Parse date range
+    start_date, end_date = None, None
+    if date_range_str:
+        date_range = parse_date_range(date_range_str)
+        if date_range:
+            start_date, end_date = date_range
+    else:
+        # Default to last 1 month
+        start_date, end_date = get_default_date_range()
+        date_range_str = format_date_range(start_date, end_date)
+    
+    # Apply filters
+    if search and not is_member(user):
+        loans = apply_text_search(loans, search, ['user__name', 'user__phone'])
+    if user_id and not is_member(user):
+        loans = loans.filter(user_id=user_id)
+    if status:
+        loans = loans.filter(status=status)
+    if from_amount or to_amount:
+        loans = apply_amount_range_filter(loans, 'principal_amount', from_amount, to_amount)
+    
+    # Apply date filter
+    loans = apply_date_filter(loans, 'applied_date', start_date, end_date)
+    
+    # Order by
+    loans = loans.order_by('-applied_date', '-created_at')
+    
+    # Calculate stats from filtered queryset
+    total_loans = loans.count()
+    total_principal = sum(l.principal_amount for l in loans)
+    total_payable = sum(l.total_payable for l in loans)
+    active_count = loans.filter(status=LoanStatus.ACTIVE).count()
+    pending_count = loans.filter(status=LoanStatus.PENDING).count()
+    approved_count = loans.filter(status=LoanStatus.APPROVED).count()
+    completed_count = loans.filter(status=LoanStatus.COMPLETED).count()
     
     context = {
         'loans': loans,
+        'stats': {
+            'total': total_loans,
+            'total_principal': total_principal,
+            'total_payable': total_payable,
+            'active': active_count,
+            'pending': pending_count,
+            'approved': approved_count,
+            'completed': completed_count,
+        },
+        'filters': {
+            'search': search,
+            'user_id': user_id,
+            'status': status,
+            'from_amount': from_amount,
+            'to_amount': to_amount,
+            'date_range': date_range_str,
+        },
+        'all_users': Loan.objects.values_list('user', flat=True).distinct() if not is_member(user) else [],
+        'all_statuses': LoanStatus.choices,
     }
+    # Get user objects for dropdown
+    if not is_member(user) and context['all_users']:
+        from app.models import User
+        context['all_users'] = User.objects.filter(id__in=context['all_users']).order_by('name')
     context.update(get_role_context(request))
     return render(request, 'core/crud/loan_list.html', context)
 

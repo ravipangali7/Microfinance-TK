@@ -10,6 +10,95 @@
 {% endif %}
 {% endblock %}
 
+{% block stats_cards %}
+<div class="row mb-3">
+    <div class="col-md-3">
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-grow-1">
+                        <h6 class="text-muted mb-1">Total Withdrawals</h6>
+                        <h3 class="mb-0">{{ stats.total }}</h3>
+                    </div>
+                    <div class="text-primary">
+                        <i class="align-middle" data-feather="file-text" style="width: 32px; height: 32px;"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-grow-1">
+                        <h6 class="text-muted mb-1">Total Amount</h6>
+                        <h3 class="mb-0">Rs. {{ stats.total_amount|floatformat:2 }}</h3>
+                    </div>
+                    <div class="text-danger">
+                        <i class="align-middle" data-feather="dollar-sign" style="width: 32px; height: 32px;"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-grow-1">
+                        <h6 class="text-muted mb-1">Pending</h6>
+                        <h3 class="mb-0">{{ stats.pending }}</h3>
+                    </div>
+                    <div class="text-warning">
+                        <i class="align-middle" data-feather="clock" style="width: 32px; height: 32px;"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-grow-1">
+                        <h6 class="text-muted mb-1">Approved</h6>
+                        <h3 class="mb-0">{{ stats.approved }}</h3>
+                    </div>
+                    <div class="text-success">
+                        <i class="align-middle" data-feather="check-circle" style="width: 32px; height: 32px;"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block filters %}
+<div class="col-md-3">
+    <label class="form-label">Status</label>
+    <select name="status" class="form-select">
+        <option value="">All Statuses</option>
+        {% for value, label in all_statuses %}
+        <option value="{{ value }}" {% if filters.status == value %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+    </select>
+</div>
+<div class="col-md-2">
+    <label class="form-label">Amount From</label>
+    <input type="number" name="from_amount" class="form-control" placeholder="Min" value="{{ filters.from_amount }}" step="0.01">
+</div>
+<div class="col-md-2">
+    <label class="form-label">Amount To</label>
+    <input type="number" name="to_amount" class="form-control" placeholder="Max" value="{{ filters.to_amount }}" step="0.01">
+</div>
+<div class="col-md-3">
+    <label class="form-label">Date Range</label>
+    <input type="text" name="date_range" id="date_range" class="form-control" placeholder="Select date range" value="{{ filters.date_range }}">
+</div>
+{% endblock %}
+
 {% block table_header %}
 <tr>
     <th>Amount</th>

@@ -3,15 +3,50 @@ from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
+from decimal import Decimal
 from app.models import Membership, MembershipUser, User
 from app.forms import MembershipForm
 from .helpers import is_admin, get_role_context
+from .filter_helpers import (
+    apply_text_search, apply_amount_range_filter
+)
 
 
 @login_required
 def membership_list(request):
-    memberships = Membership.objects.all().order_by('name')
-    context = {'memberships': memberships}
+    memberships = Membership.objects.all()
+    
+    # Apply filters
+    search = request.GET.get('search', '')
+    from_amount = request.GET.get('from_amount', '')
+    to_amount = request.GET.get('to_amount', '')
+    
+    # Apply text search
+    if search:
+        memberships = apply_text_search(memberships, search, ['name'])
+    
+    # Apply amount range filter
+    memberships = apply_amount_range_filter(memberships, 'amount', from_amount, to_amount)
+    
+    # Order by
+    memberships = memberships.order_by('name')
+    
+    # Calculate stats from filtered queryset
+    total_memberships = memberships.count()
+    total_amount = sum(m.amount for m in memberships)
+    
+    context = {
+        'memberships': memberships,
+        'stats': {
+            'total': total_memberships,
+            'total_amount': total_amount,
+        },
+        'filters': {
+            'search': search,
+            'from_amount': from_amount,
+            'to_amount': to_amount,
+        },
+    }
     context.update(get_role_context(request))
     return render(request, 'core/crud/membership_list.html', context)
 

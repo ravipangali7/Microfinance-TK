@@ -16,15 +16,49 @@ logger = logging.getLogger(__name__)
 @login_required
 def push_notification_list(request):
     """List all push notifications"""
+    from .filter_helpers import (
+        get_default_date_range, parse_date_range, format_date_range,
+        apply_date_filter
+    )
+    
     # Only admin can view push notifications
     if not is_admin(request.user):
         messages.error(request, 'Access denied. Only Admin can view push notifications.')
         return redirect('dashboard')
     
-    notifications = PushNotification.objects.all().order_by('-created_at')
+    notifications = PushNotification.objects.all()
+    
+    # Apply filters
+    date_range_str = request.GET.get('date_range', '')
+    
+    # Parse date range
+    start_date, end_date = None, None
+    if date_range_str:
+        date_range = parse_date_range(date_range_str)
+        if date_range:
+            start_date, end_date = date_range
+    else:
+        # Default to last 1 month
+        start_date, end_date = get_default_date_range()
+        date_range_str = format_date_range(start_date, end_date)
+    
+    # Apply date filter
+    notifications = apply_date_filter(notifications, 'created_at', start_date, end_date)
+    
+    # Order by
+    notifications = notifications.order_by('-created_at')
+    
+    # Calculate stats
+    total_notifications = notifications.count()
     
     context = {
         'notifications': notifications,
+        'stats': {
+            'total': total_notifications,
+        },
+        'filters': {
+            'date_range': date_range_str,
+        },
     }
     context.update(get_role_context(request))
     return render(request, 'core/crud/push_notification_list.html', context)

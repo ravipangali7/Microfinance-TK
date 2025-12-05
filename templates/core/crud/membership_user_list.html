@@ -10,6 +10,51 @@
 {% endif %}
 {% endblock %}
 
+{% block stats_cards %}
+<div class="row mb-3">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-grow-1">
+                        <h6 class="text-muted mb-1">Total Assignments</h6>
+                        <h3 class="mb-0">{{ stats.total }}</h3>
+                    </div>
+                    <div class="text-primary">
+                        <i class="align-middle" data-feather="link" style="width: 32px; height: 32px;"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block filters %}
+<div class="col-md-3">
+    <label class="form-label">User</label>
+    <select name="user_id" class="form-select">
+        <option value="">All Users</option>
+        {% for user in all_users %}
+        <option value="{{ user.id }}" {% if filters.user_id == user.id|stringformat:"s" %}selected{% endif %}>{{ user.name }} ({{ user.phone }})</option>
+        {% endfor %}
+    </select>
+</div>
+<div class="col-md-3">
+    <label class="form-label">Membership</label>
+    <select name="membership_id" class="form-select">
+        <option value="">All Memberships</option>
+        {% for membership in all_memberships %}
+        <option value="{{ membership.id }}" {% if filters.membership_id == membership.id|stringformat:"s" %}selected{% endif %}>{{ membership.name }}</option>
+        {% endfor %}
+    </select>
+</div>
+<div class="col-md-3">
+    <label class="form-label">Date Range</label>
+    <input type="text" name="date_range" id="date_range" class="form-control" placeholder="Select date range" value="{{ filters.date_range }}">
+</div>
+{% endblock %}
+
 {% block table_header %}
 <tr>
     <th>User</th>

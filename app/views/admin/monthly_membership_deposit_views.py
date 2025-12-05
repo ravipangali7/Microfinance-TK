@@ -3,9 +3,14 @@ from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from app.models import MonthlyMembershipDeposit, User, MembershipUser
+from decimal import Decimal
+from app.models import MonthlyMembershipDeposit, User, MembershipUser, Membership, PaymentStatus
 from app.forms import MonthlyMembershipDepositForm
 from .helpers import is_admin, is_member, get_role_context
+from .filter_helpers import (
+    get_default_date_range, parse_date_range, format_date_range,
+    apply_date_filter
+)
 
 
 @login_required
@@ -13,11 +18,71 @@ def monthly_membership_deposit_list(request):
     user = request.user
     # Members can only see their own deposits
     if is_member(user):
-        deposits = MonthlyMembershipDeposit.objects.filter(user=user).select_related('user', 'membership').order_by('-date', '-created_at')
+        deposits = MonthlyMembershipDeposit.objects.filter(user=user).select_related('user', 'membership')
     else:
-        deposits = MonthlyMembershipDeposit.objects.select_related('user', 'membership').order_by('-date', '-created_at')
+        deposits = MonthlyMembershipDeposit.objects.select_related('user', 'membership')
     
-    context = {'deposits': deposits}
+    # Apply filters
+    user_id = request.GET.get('user_id', '')
+    membership_id = request.GET.get('membership_id', '')
+    payment_status = request.GET.get('payment_status', '')
+    date_range_str = request.GET.get('date_range', '')
+    
+    # Parse date range
+    start_date, end_date = None, None
+    if date_range_str:
+        date_range = parse_date_range(date_range_str)
+        if date_range:
+            start_date, end_date = date_range
+    else:
+        # Default to last 1 month
+        start_date, end_date = get_default_date_range()
+        date_range_str = format_date_range(start_date, end_date)
+    
+    # Apply filters
+    if user_id and not is_member(user):
+        deposits = deposits.filter(user_id=user_id)
+    if membership_id:
+        deposits = deposits.filter(membership_id=membership_id)
+    if payment_status:
+        deposits = deposits.filter(payment_status=payment_status)
+    
+    # Apply date filter
+    deposits = apply_date_filter(deposits, 'date', start_date, end_date)
+    
+    # Order by
+    deposits = deposits.order_by('-date', '-created_at')
+    
+    # Calculate stats from filtered queryset
+    total_deposits = deposits.count()
+    total_amount = sum(d.amount for d in deposits)
+    paid_deposits = deposits.filter(payment_status=PaymentStatus.PAID)
+    paid_count = paid_deposits.count()
+    paid_amount = sum(d.amount for d in paid_deposits)
+    pending_deposits = deposits.filter(payment_status=PaymentStatus.PENDING)
+    pending_count = pending_deposits.count()
+    pending_amount = sum(d.amount for d in pending_deposits)
+    
+    context = {
+        'deposits': deposits,
+        'stats': {
+            'total': total_deposits,
+            'total_amount': total_amount,
+            'paid_count': paid_count,
+            'paid_amount': paid_amount,
+            'pending_count': pending_count,
+            'pending_amount': pending_amount,
+        },
+        'filters': {
+            'user_id': user_id,
+            'membership_id': membership_id,
+            'payment_status': payment_status,
+            'date_range': date_range_str,
+        },
+        'all_users': User.objects.all().order_by('name') if not is_member(user) else [],
+        'all_memberships': Membership.objects.all().order_by('name'),
+        'payment_statuses': PaymentStatus.choices,
+    }
     context.update(get_role_context(request))
     return render(request, 'core/crud/monthly_membership_deposit_list.html', context)
 

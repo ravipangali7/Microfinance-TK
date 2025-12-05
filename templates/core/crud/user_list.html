@@ -10,6 +10,91 @@
 {% endif %}
 {% endblock %}
 
+{% block stats_cards %}
+<div class="row mb-3">
+    <div class="col-md-3">
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-grow-1">
+                        <h6 class="text-muted mb-1">Total Users</h6>
+                        <h3 class="mb-0">{{ stats.total }}</h3>
+                    </div>
+                    <div class="text-primary">
+                        <i class="align-middle" data-feather="users" style="width: 32px; height: 32px;"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-grow-1">
+                        <h6 class="text-muted mb-1">Active</h6>
+                        <h3 class="mb-0">{{ stats.active }}</h3>
+                    </div>
+                    <div class="text-success">
+                        <i class="align-middle" data-feather="check-circle" style="width: 32px; height: 32px;"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-grow-1">
+                        <h6 class="text-muted mb-1">Freeze</h6>
+                        <h3 class="mb-0">{{ stats.freeze }}</h3>
+                    </div>
+                    <div class="text-warning">
+                        <i class="align-middle" data-feather="pause-circle" style="width: 32px; height: 32px;"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-grow-1">
+                        <h6 class="text-muted mb-1">Inactive</h6>
+                        <h3 class="mb-0">{{ stats.inactive }}</h3>
+                    </div>
+                    <div class="text-secondary">
+                        <i class="align-middle" data-feather="x-circle" style="width: 32px; height: 32px;"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block filters %}
+<div class="col-md-3">
+    <label class="form-label">Search</label>
+    <input type="text" name="search" class="form-control" placeholder="Name, Phone, Email..." value="{{ filters.search }}">
+</div>
+<div class="col-md-3">
+    <label class="form-label">Date Range</label>
+    <input type="text" name="date_range" id="date_range" class="form-control" placeholder="Select date range" value="{{ filters.date_range }}">
+</div>
+<div class="col-md-3">
+    <label class="form-label">Status</label>
+    <select name="status" class="form-select">
+        <option value="">All Statuses</option>
+        {% for value, label in all_statuses %}
+        <option value="{{ value }}" {% if filters.status == value %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+    </select>
+</div>
+{% endblock %}
+
 {% block table_header %}
 <tr>
     <th>Name</th>
