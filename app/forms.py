@@ -111,6 +111,15 @@ class MonthlyMembershipDepositForm(forms.ModelForm):
         # Ensure is_custom defaults to False if not provided
         if 'is_custom' not in self.data and not self.instance.pk:
             self.fields['is_custom'].initial = False
+    
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        # Explicitly set is_custom to False if not provided
+        if not hasattr(instance, 'is_custom') or instance.is_custom is None:
+            instance.is_custom = False
+        if commit:
+            instance.save()
+        return instance
 
 
 class LoanForm(forms.ModelForm):
@@ -247,6 +256,15 @@ class LoanInterestPaymentForm(forms.ModelForm):
         # Ensure is_custom defaults to False if not provided
         if 'is_custom' not in self.data and not self.instance.pk:
             self.fields['is_custom'].initial = False
+    
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        # Explicitly set is_custom to False if not provided
+        if not hasattr(instance, 'is_custom') or instance.is_custom is None:
+            instance.is_custom = False
+        if commit:
+            instance.save()
+        return instance
 
 
 class LoanPrinciplePaymentForm(forms.ModelForm):
@@ -275,6 +293,15 @@ class LoanPrinciplePaymentForm(forms.ModelForm):
         # Ensure is_custom defaults to False if not provided
         if 'is_custom' not in self.data and not self.instance.pk:
             self.fields['is_custom'].initial = False
+    
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        # Explicitly set is_custom to False if not provided
+        if not hasattr(instance, 'is_custom') or instance.is_custom is None:
+            instance.is_custom = False
+        if commit:
+            instance.save()
+        return instance
 
 
 class OrganizationalWithdrawalForm(forms.ModelForm):
