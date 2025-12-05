@@ -262,28 +262,7 @@ class Loan(TimeStampedModel):
         # Save the instance first
         super().save(*args, **kwargs)
         
-        # Update balance based on loan status changes (disbursement)
-        if is_new:
-            # New loan: subtract from balance if active (disbursed)
-            if self.status == LoanStatus.ACTIVE:
-                update_system_balance(self.principal_amount, operation='subtract')
-        else:
-            # Existing loan: handle status and principal changes
-            if old_status != self.status:
-                # Status changed
-                if old_status == LoanStatus.ACTIVE:
-                    # Was active (disbursed), now other status: add back to balance
-                    update_system_balance(old_principal, operation='add')
-                if self.status == LoanStatus.ACTIVE:
-                    # Now active (disbursed): subtract from balance
-                    update_system_balance(self.principal_amount, operation='subtract')
-            elif self.status == LoanStatus.ACTIVE and old_principal != self.principal_amount:
-                # Principal changed while active: adjust balance
-                difference = self.principal_amount - old_principal
-                if difference > 0:
-                    update_system_balance(difference, operation='subtract')
-                else:
-                    update_system_balance(abs(difference), operation='add')
+        # Note: Loans no longer affect system balance
     
     def get_total_paid_principle(self):
         """Calculate total paid principle from all paid principle payments"""
@@ -296,9 +275,7 @@ class Loan(TimeStampedModel):
         return self.principal_amount - self.get_total_paid_principle()
 
     def delete(self, *args, **kwargs):
-        # If loan was active (disbursed), add back to balance
-        if self.status == LoanStatus.ACTIVE:
-            update_system_balance(self.principal_amount, operation='add')
+        # Note: Loans no longer affect system balance
         super().delete(*args, **kwargs)
 
 
@@ -573,28 +550,7 @@ class LoanPrinciplePayment(TimeStampedModel):
         # Save the instance first
         super().save(*args, **kwargs)
         
-        # Update balance based on payment status changes
-        if is_new:
-            # New payment: add to balance if paid
-            if self.payment_status == PaymentStatus.PAID:
-                update_system_balance(self.amount, operation='add')
-        else:
-            # Existing payment: handle status and amount changes
-            if old_status != self.payment_status:
-                # Status changed
-                if old_status == PaymentStatus.PAID and self.payment_status == PaymentStatus.PENDING:
-                    # Was paid, now pending: subtract from balance
-                    update_system_balance(old_amount, operation='subtract')
-                elif old_status == PaymentStatus.PENDING and self.payment_status == PaymentStatus.PAID:
-                    # Was pending, now paid: add to balance
-                    update_system_balance(self.amount, operation='add')
-            elif self.payment_status == PaymentStatus.PAID and old_amount != self.amount:
-                # Amount changed while paid: adjust balance
-                difference = self.amount - old_amount
-                if difference > 0:
-                    update_system_balance(difference, operation='add')
-                else:
-                    update_system_balance(abs(difference), operation='subtract')
+        # Note: Loan principle payments no longer affect system balance
         
         # Create cash payment transaction when payment is marked as paid and is_custom is True
         # Only create transaction when status is PAID (never for pending)
@@ -629,9 +585,7 @@ class LoanPrinciplePayment(TimeStampedModel):
                 )
 
     def delete(self, *args, **kwargs):
-        # If payment was paid, subtract from balance
-        if self.payment_status == PaymentStatus.PAID:
-            update_system_balance(self.amount, operation='subtract')
+        # Note: Loan principle payments no longer affect system balance
         super().delete(*args, **kwargs)
 
 
