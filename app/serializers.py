@@ -59,7 +59,7 @@ class MonthlyMembershipDepositSerializer(serializers.ModelSerializer):
         model = MonthlyMembershipDeposit
         fields = [
             'id', 'user', 'user_id', 'membership', 'membership_id',
-            'amount', 'date', 'payment_status', 'name', 'paid_date',
+            'amount', 'date', 'payment_status', 'name', 'paid_date', 'is_custom',
             'created_at', 'updated_at'
         ]
         read_only_fields = ['id', 'created_at', 'updated_at']
@@ -124,7 +124,7 @@ class LoanInterestPaymentSerializer(serializers.ModelSerializer):
     class Meta:
         model = LoanInterestPayment
         fields = [
-            'id', 'loan_id', 'amount', 'payment_status', 'paid_date', 'name',
+            'id', 'loan_id', 'amount', 'payment_status', 'paid_date', 'name', 'is_custom',
             'created_at', 'updated_at'
         ]
         read_only_fields = ['id', 'created_at', 'updated_at']
@@ -192,7 +192,7 @@ class LoanPrinciplePaymentSerializer(serializers.ModelSerializer):
     class Meta:
         model = LoanPrinciplePayment
         fields = [
-            'id', 'loan_id', 'amount', 'payment_status', 'paid_date',
+            'id', 'loan_id', 'amount', 'payment_status', 'paid_date', 'is_custom',
             'created_at', 'updated_at'
         ]
         read_only_fields = ['id', 'created_at', 'updated_at']

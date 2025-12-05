@@ -124,6 +124,7 @@ class MonthlyMembershipDeposit(TimeStampedModel):
     payment_status = models.CharField(max_length=20, choices=PaymentStatus.choices, default=PaymentStatus.PENDING)
     name = models.CharField(max_length=50, blank=True, help_text='Auto-generated format: YYYY MMM (e.g., "2025 Apr")')
     paid_date = models.DateField(blank=True, null=True, help_text='Date when payment was completed')
+    is_custom = models.BooleanField(default=False, help_text='If True, creates cash payment transaction when payment_status is paid')
 
     class Meta:
         verbose_name = 'Monthly Membership Deposit'
@@ -179,9 +180,9 @@ class MonthlyMembershipDeposit(TimeStampedModel):
                 else:
                     update_system_balance(abs(difference), operation='subtract')
         
-        # Create cash payment transaction when payment is marked as paid
+        # Create cash payment transaction when payment is marked as paid and is_custom is True
         # Only create transaction when status is PAID (never for pending)
-        if self.payment_status == PaymentStatus.PAID:
+        if self.payment_status == PaymentStatus.PAID and self.is_custom:
             # Check if status changed to paid (new record with paid status, or status changed from non-paid to paid)
             should_create_transaction = False
             if is_new:
@@ -304,6 +305,7 @@ class LoanInterestPayment(TimeStampedModel):
     payment_status = models.CharField(max_length=20, choices=PaymentStatus.choices, default=PaymentStatus.PENDING)
     paid_date = models.DateField(blank=True, null=True)
     name = models.CharField(max_length=50, blank=True, help_text='Auto-generated format: YYYY MMM (e.g., "2025 Oct")')
+    is_custom = models.BooleanField(default=False, help_text='If True, creates cash payment transaction when payment_status is paid')
 
     class Meta:
         verbose_name = 'Loan Interest Payment'
@@ -364,9 +366,9 @@ class LoanInterestPayment(TimeStampedModel):
                 else:
                     update_system_balance(abs(difference), operation='subtract')
         
-        # Create cash payment transaction when payment is marked as paid
+        # Create cash payment transaction when payment is marked as paid and is_custom is True
         # Only create transaction when status is PAID (never for pending)
-        if self.payment_status == PaymentStatus.PAID:
+        if self.payment_status == PaymentStatus.PAID and self.is_custom:
             # Check if status changed to paid (new record with paid status, or status changed from non-paid to paid)
             should_create_transaction = False
             if is_new:
@@ -528,6 +530,7 @@ class LoanPrinciplePayment(TimeStampedModel):
     amount = models.DecimalField(max_digits=15, decimal_places=2)
     payment_status = models.CharField(max_length=20, choices=PaymentStatus.choices, default=PaymentStatus.PENDING)
     paid_date = models.DateField(blank=True, null=True)
+    is_custom = models.BooleanField(default=False, help_text='If True, creates cash payment transaction when payment_status is paid')
 
     class Meta:
         verbose_name = 'Loan Principle Payment'
@@ -581,9 +584,9 @@ class LoanPrinciplePayment(TimeStampedModel):
                 else:
                     update_system_balance(abs(difference), operation='subtract')
         
-        # Create cash payment transaction when payment is marked as paid
+        # Create cash payment transaction when payment is marked as paid and is_custom is True
         # Only create transaction when status is PAID (never for pending)
-        if self.payment_status == PaymentStatus.PAID:
+        if self.payment_status == PaymentStatus.PAID and self.is_custom:
             # Check if status changed to paid (new record with paid status, or status changed from non-paid to paid)
             should_create_transaction = False
             if is_new:

@@ -74,8 +74,8 @@ class MembershipUserAdmin(admin.ModelAdmin):
 
 @admin.register(MonthlyMembershipDeposit)
 class MonthlyMembershipDepositAdmin(admin.ModelAdmin):
-    list_display = ['user', 'membership', 'amount', 'date', 'payment_status', 'created_at']
-    list_filter = ['payment_status', 'membership', 'date', 'created_at']
+    list_display = ['user', 'membership', 'amount', 'date', 'payment_status', 'is_custom', 'created_at']
+    list_filter = ['payment_status', 'is_custom', 'membership', 'date', 'created_at']
     search_fields = ['user__name', 'user__phone', 'membership__name']
     readonly_fields = ['created_at', 'updated_at']
     raw_id_fields = ['user', 'membership']
@@ -142,8 +142,8 @@ class LoanAdmin(admin.ModelAdmin):
 
 @admin.register(LoanInterestPayment)
 class LoanInterestPaymentAdmin(admin.ModelAdmin):
-    list_display = ['loan', 'amount', 'payment_status', 'paid_date', 'created_at']
-    list_filter = ['payment_status', 'paid_date', 'created_at']
+    list_display = ['loan', 'amount', 'payment_status', 'is_custom', 'paid_date', 'created_at']
+    list_filter = ['payment_status', 'is_custom', 'paid_date', 'created_at']
     search_fields = ['loan__user__name', 'loan__user__phone']
     readonly_fields = ['created_at', 'updated_at']
     raw_id_fields = ['loan']
@@ -157,8 +157,8 @@ class LoanInterestPaymentAdmin(admin.ModelAdmin):
 
 @admin.register(LoanPrinciplePayment)
 class LoanPrinciplePaymentAdmin(admin.ModelAdmin):
-    list_display = ['loan', 'amount', 'payment_status', 'paid_date', 'created_at']
-    list_filter = ['payment_status', 'paid_date', 'created_at']
+    list_display = ['loan', 'amount', 'payment_status', 'is_custom', 'paid_date', 'created_at']
+    list_filter = ['payment_status', 'is_custom', 'paid_date', 'created_at']
     search_fields = ['loan__user__name', 'loan__user__phone']
     readonly_fields = ['created_at', 'updated_at']
     raw_id_fields = ['loan']

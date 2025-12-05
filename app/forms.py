@@ -98,11 +98,12 @@ class MonthlyMembershipDepositForm(forms.ModelForm):
     
     class Meta:
         model = MonthlyMembershipDeposit
-        fields = ['user', 'membership', 'amount', 'date', 'payment_status']
+        fields = ['user', 'membership', 'amount', 'date', 'payment_status', 'is_custom']
         widgets = {
             'amount': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
             'date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
             'payment_status': forms.Select(attrs={'class': 'form-select'}, choices=PaymentStatus.choices),
+            'is_custom': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         }
 
 
@@ -222,11 +223,12 @@ class LoanInterestPaymentForm(forms.ModelForm):
     
     class Meta:
         model = LoanInterestPayment
-        fields = ['loan', 'amount', 'payment_status', 'paid_date']
+        fields = ['loan', 'amount', 'payment_status', 'paid_date', 'is_custom']
         widgets = {
             'amount': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
             'payment_status': forms.Select(attrs={'class': 'form-select'}, choices=PaymentStatus.choices),
             'paid_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'is_custom': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         }
     
     def __init__(self, *args, **kwargs):
@@ -246,11 +248,12 @@ class LoanPrinciplePaymentForm(forms.ModelForm):
     
     class Meta:
         model = LoanPrinciplePayment
-        fields = ['loan', 'amount', 'payment_status', 'paid_date']
+        fields = ['loan', 'amount', 'payment_status', 'paid_date', 'is_custom']
         widgets = {
             'amount': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
             'payment_status': forms.Select(attrs={'class': 'form-select'}, choices=PaymentStatus.choices),
             'paid_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'is_custom': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         }
     
     def __init__(self, *args, **kwargs):
