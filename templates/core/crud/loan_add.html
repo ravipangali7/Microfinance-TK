@@ -4,6 +4,70 @@
 <div class="container-fluid p-0">
     <h1 class="h3 mb-3">Add New Loan</h1>
     
+    <!-- Real-Time Stats Cards -->
+    <div class="row mb-4" id="loan-stats-cards">
+        <div class="col-md-3 mb-3">
+            <div class="card border-success">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0">
+                            <i class="align-middle text-success" data-feather="dollar-sign" style="width: 24px; height: 24px;"></i>
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <h6 class="mb-0 text-muted">Total Payable</h6>
+                            <h4 class="mb-0 text-success" id="stat-total-payable">Rs. 0.00</h4>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card border-info">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0">
+                            <i class="align-middle text-info" data-feather="percent" style="width: 24px; height: 24px;"></i>
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <h6 class="mb-0 text-muted">Total Interest</h6>
+                            <h4 class="mb-0 text-info" id="stat-total-interest">Rs. 0.00</h4>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card border-warning">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0">
+                            <i class="align-middle text-warning" data-feather="calendar" style="width: 24px; height: 24px;"></i>
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <h6 class="mb-0 text-muted">Monthly Interest</h6>
+                            <h4 class="mb-0 text-warning" id="stat-monthly-interest">Rs. 0.00</h4>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card border-primary">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0">
+                            <i class="align-middle text-primary" data-feather="clock" style="width: 24px; height: 24px;"></i>
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <h6 class="mb-0 text-muted">Applied Date</h6>
+                            <h6 class="mb-0 text-primary" id="stat-applied-date">-</h6>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
     <div class="row">
         <div class="col-12">
             <div class="card">
@@ -60,4 +124,85 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize feather icons
+        if (typeof feather !== 'undefined') {
+            feather.replace();
+        }
+        
+        const principalInput = document.getElementById('id_principal_amount');
+        const timelineInput = document.getElementById('id_timeline');
+        const appliedDateInput = document.getElementById('id_applied_date');
+        
+        let defaultInterestRate = 10.00; // Default fallback
+        
+        // Fetch default loan settings
+        fetch('/api/settings/loan-settings/')
+            .then(response => response.json())
+            .then(data => {
+                if (data.loan_interest_rate) {
+                    defaultInterestRate = parseFloat(data.loan_interest_rate);
+                }
+                // Calculate initial stats if values are already present
+                calculateAndUpdateStats();
+            })
+            .catch(error => {
+                console.error('Error fetching loan settings:', error);
+                calculateAndUpdateStats();
+            });
+        
+        function formatCurrency(amount) {
+            return 'Rs. ' + parseFloat(amount).toFixed(2);
+        }
+        
+        function formatDate(dateString) {
+            if (!dateString) return '-';
+            const date = new Date(dateString);
+            return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+        }
+        
+        function calculateAndUpdateStats() {
+            const principal = parseFloat(principalInput?.value) || 0;
+            const timeline = parseFloat(timelineInput?.value) || 1;
+            const interestRate = defaultInterestRate; // Use default for add form
+            
+            // Calculate total interest
+            const totalInterest = (principal * interestRate) / 100;
+            
+            // Calculate total payable
+            const totalPayable = principal + totalInterest;
+            
+            // Calculate monthly interest
+            const monthlyInterest = timeline > 0 ? totalInterest / timeline : 0;
+            
+            // Update stats cards
+            document.getElementById('stat-total-payable').textContent = formatCurrency(totalPayable);
+            document.getElementById('stat-total-interest').textContent = formatCurrency(totalInterest);
+            document.getElementById('stat-monthly-interest').textContent = formatCurrency(monthlyInterest);
+            document.getElementById('stat-applied-date').textContent = formatDate(appliedDateInput?.value);
+        }
+        
+        // Add event listeners for real-time updates
+        if (principalInput) {
+            principalInput.addEventListener('input', calculateAndUpdateStats);
+            principalInput.addEventListener('change', calculateAndUpdateStats);
+        }
+        
+        if (timelineInput) {
+            timelineInput.addEventListener('input', calculateAndUpdateStats);
+            timelineInput.addEventListener('change', calculateAndUpdateStats);
+        }
+        
+        if (appliedDateInput) {
+            appliedDateInput.addEventListener('change', calculateAndUpdateStats);
+        }
+        
+        // Initial calculation
+        calculateAndUpdateStats();
+    });
+</script>
 {% endblock %}
