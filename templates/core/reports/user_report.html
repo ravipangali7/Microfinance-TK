@@ -24,7 +24,7 @@
                     <select name="user_id" class="form-select" required>
                         <option value="">-- Select User --</option>
                         {% for u in all_users %}
-                        <option value="{{ u.id }}" {% if user and user.id == u.id %}selected{% endif %}>
+                        <option value="{{ u.id }}" {% if selected_user and selected_user.id == u.id %}selected{% endif %}>
                             {{ u.name }} ({{ u.phone }})
                         </option>
                         {% endfor %}
@@ -47,7 +47,7 @@
         </div>
     </div>
 
-    {% if user %}
+    {% if selected_user %}
     <!-- User Information Card -->
     <div class="card mb-4">
         <div class="card-header bg-primary text-white">
@@ -59,13 +59,13 @@
         <div class="card-body">
             <div class="row">
                 <div class="col-md-6">
-                    <p><strong>Name:</strong> {{ user.name }}</p>
-                    <p><strong>Phone:</strong> {{ user.phone }}</p>
-                    <p><strong>Email:</strong> {{ user.email|default:"-" }}</p>
+                    <p><strong>Name:</strong> {{ selected_user.name }}</p>
+                    <p><strong>Phone:</strong> {{ selected_user.phone }}</p>
+                    <p><strong>Email:</strong> {{ selected_user.email|default:"-" }}</p>
                     <p><strong>Status:</strong> 
-                        {% if user.status == 'active' %}
+                        {% if selected_user.status == 'active' %}
                             <span class="badge bg-success">Active</span>
-                        {% elif user.status == 'freeze' %}
+                        {% elif selected_user.status == 'freeze' %}
                             <span class="badge bg-warning">Freeze</span>
                         {% else %}
                             <span class="badge bg-danger">Inactive</span>
@@ -73,10 +73,10 @@
                     </p>
                 </div>
                 <div class="col-md-6">
-                    <p><strong>Gender:</strong> {{ user.get_gender_display|default:"-" }}</p>
-                    <p><strong>Date of Birth:</strong> {{ user.date_of_birth|date:"Y-m-d"|default:"-" }}</p>
-                    <p><strong>Joined Date:</strong> {{ user.joined_date|date:"Y-m-d" }}</p>
-                    <p><strong>Address:</strong> {{ user.address|default:"-" }}</p>
+                    <p><strong>Gender:</strong> {{ selected_user.get_gender_display|default:"-" }}</p>
+                    <p><strong>Date of Birth:</strong> {{ selected_user.date_of_birth|date:"Y-m-d"|default:"-" }}</p>
+                    <p><strong>Joined Date:</strong> {{ selected_user.joined_date|date:"Y-m-d" }}</p>
+                    <p><strong>Address:</strong> {{ selected_user.address|default:"-" }}</p>
                 </div>
             </div>
         </div>

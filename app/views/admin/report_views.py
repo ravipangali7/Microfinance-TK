@@ -175,7 +175,7 @@ def user_report(request):
     # Get all users for dropdown
     all_users = User.objects.all().order_by('name')
     
-    user = None
+    selected_user = None
     deposits = MonthlyMembershipDeposit.objects.none()
     loans = Loan.objects.none()
     interest_payments = LoanInterestPayment.objects.none()
@@ -193,32 +193,32 @@ def user_report(request):
     
     if user_id:
         try:
-            user = User.objects.get(pk=user_id)
+            selected_user = User.objects.get(pk=user_id)
             
             # Get deposits within date range
             deposits = MonthlyMembershipDeposit.objects.filter(
-                user=user,
+                user=selected_user,
                 date__gte=from_date_obj,
                 date__lte=to_date_obj
             ).select_related('membership').order_by('-date', '-created_at')
             
             # Get loans within date range
             loans = Loan.objects.filter(
-                user=user,
+                user=selected_user,
                 applied_date__gte=from_date_obj,
                 applied_date__lte=to_date_obj
             ).select_related('action_by').prefetch_related('interest_payments', 'principle_payments').order_by('-applied_date', '-created_at')
             
             # Get interest payments within date range
             interest_payments = LoanInterestPayment.objects.filter(
-                loan__user=user,
+                loan__user=selected_user,
                 paid_date__gte=from_date_obj,
                 paid_date__lte=to_date_obj
             ).select_related('loan').order_by('-paid_date', '-created_at')
             
             # Get principle payments within date range
             principle_payments = LoanPrinciplePayment.objects.filter(
-                loan__user=user,
+                loan__user=selected_user,
                 paid_date__gte=from_date_obj,
                 paid_date__lte=to_date_obj
             ).select_related('loan').order_by('-paid_date', '-created_at')
@@ -252,7 +252,7 @@ def user_report(request):
             pass
     
     context = {
-        'user': user,
+        'selected_user': selected_user,
         'all_users': all_users,
         'user_id': user_id,
         'from_date': from_date,
