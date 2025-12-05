@@ -59,9 +59,13 @@
                                 <div class="form-check">
                                     {{ form.is_custom }}
                                     <label class="form-check-label" for="{{ form.is_custom.id_for_label }}">
-                                        Create Cash Payment Transaction
+                                        <strong>Create Cash Payment Transaction (Cash Mode)</strong>
                                     </label>
-                                    <small class="form-text text-muted d-block">If checked and payment status is "Paid", a cash payment transaction will be automatically created.</small>
+                                    <small class="form-text text-muted d-block mt-2">
+                                        <i class="align-middle" data-feather="info"></i>
+                                        <strong>Note:</strong> Check this box if this is a cash payment made at the office. 
+                                        When checked and payment status is set to "Paid", a cash payment transaction will be automatically created in the system.
+                                    </small>
                                 </div>
                                 {% if form.is_custom.errors %}
                                     <div class="text-danger">{{ form.is_custom.errors }}</div>
