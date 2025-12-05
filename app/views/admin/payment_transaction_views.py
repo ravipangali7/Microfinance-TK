@@ -24,6 +24,7 @@ def payment_transaction_list(request):
         transactions = PaymentTransaction.objects.all().select_related('user')
     
     # Apply filters
+    search = request.GET.get('search', '')
     user_id = request.GET.get('user_id', '')
     payment_type = request.GET.get('payment_type', '')
     status = request.GET.get('status', '')
@@ -39,6 +40,29 @@ def payment_transaction_list(request):
         # Default to last 1 month
         start_date, end_date = get_default_date_range()
         date_range_str = format_date_range(start_date, end_date)
+    
+    # Apply search filter
+    if search:
+        search = search.strip()
+        if search:
+            search_filter = Q(
+                upi_txn_id__icontains=search
+            ) | Q(
+                user__phone__icontains=search
+            ) | Q(
+                user__name__icontains=search
+            ) | Q(
+                client_txn_id__icontains=search
+            ) | Q(
+                customer_name__icontains=search
+            )
+            # Also search in order_id if it's numeric
+            try:
+                order_id = int(search)
+                search_filter |= Q(order_id=order_id)
+            except (ValueError, TypeError):
+                pass
+            transactions = transactions.filter(search_filter)
     
     # Apply filters
     if user_id and not is_member(user):
@@ -81,6 +105,7 @@ def payment_transaction_list(request):
             'failed': failed_count,
         },
         'filters': {
+            'search': search,
             'user_id': user_id,
             'payment_type': payment_type,
             'status': status,
