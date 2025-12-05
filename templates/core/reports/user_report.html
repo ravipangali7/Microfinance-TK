@@ -1,0 +1,391 @@
+{% extends 'core/layouts/base.html' %}
+
+{% block content %}
+<div class="container-fluid p-0">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3 mb-0">
+            <i class="align-middle me-2" data-feather="file-text"></i>
+            User Report
+        </h1>
+        <button onclick="window.print()" class="btn btn-primary">
+            <i class="align-middle me-1" data-feather="printer"></i> Print Report
+        </button>
+    </div>
+
+    <!-- Filter Section -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="card-title mb-0">Filter Options</h5>
+        </div>
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-4">
+                    <label class="form-label">Select User</label>
+                    <select name="user_id" class="form-select" required>
+                        <option value="">-- Select User --</option>
+                        {% for u in all_users %}
+                        <option value="{{ u.id }}" {% if user and user.id == u.id %}selected{% endif %}>
+                            {{ u.name }} ({{ u.phone }})
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">From Date</label>
+                    <input type="date" name="from_date" class="form-control" value="{{ from_date }}" required>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">To Date</label>
+                    <input type="date" name="to_date" class="form-control" value="{{ to_date }}" required>
+                </div>
+                <div class="col-md-2 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="align-middle me-1" data-feather="search"></i> Filter
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    {% if user %}
+    <!-- User Information Card -->
+    <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+            <h5 class="card-title mb-0">
+                <i class="align-middle me-2" data-feather="user"></i>
+                User Information
+            </h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <p><strong>Name:</strong> {{ user.name }}</p>
+                    <p><strong>Phone:</strong> {{ user.phone }}</p>
+                    <p><strong>Email:</strong> {{ user.email|default:"-" }}</p>
+                    <p><strong>Status:</strong> 
+                        {% if user.status == 'active' %}
+                            <span class="badge bg-success">Active</span>
+                        {% elif user.status == 'freeze' %}
+                            <span class="badge bg-warning">Freeze</span>
+                        {% else %}
+                            <span class="badge bg-danger">Inactive</span>
+                        {% endif %}
+                    </p>
+                </div>
+                <div class="col-md-6">
+                    <p><strong>Gender:</strong> {{ user.get_gender_display|default:"-" }}</p>
+                    <p><strong>Date of Birth:</strong> {{ user.date_of_birth|date:"Y-m-d"|default:"-" }}</p>
+                    <p><strong>Joined Date:</strong> {{ user.joined_date|date:"Y-m-d" }}</p>
+                    <p><strong>Address:</strong> {{ user.address|default:"-" }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Summary Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3 mb-3">
+            <div class="card border-success">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0">
+                            <i class="align-middle text-success" data-feather="dollar-sign" style="width: 32px; height: 32px;"></i>
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <h6 class="mb-0 text-muted">Deposits Paid</h6>
+                            <h4 class="mb-0 text-success">Rs. {{ total_deposits_paid|floatformat:2 }}</h4>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card border-warning">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0">
+                            <i class="align-middle text-warning" data-feather="clock" style="width: 32px; height: 32px;"></i>
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <h6 class="mb-0 text-muted">Deposits Pending</h6>
+                            <h4 class="mb-0 text-warning">Rs. {{ total_deposits_pending|floatformat:2 }}</h4>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card border-primary">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0">
+                            <i class="align-middle text-primary" data-feather="credit-card" style="width: 32px; height: 32px;"></i>
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <h6 class="mb-0 text-muted">Total Loans</h6>
+                            <h4 class="mb-0 text-primary">{{ total_loans_count }}</h4>
+                            <small class="text-muted">Rs. {{ total_loans_amount|floatformat:2 }}</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card border-info">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0">
+                            <i class="align-middle text-info" data-feather="activity" style="width: 32px; height: 32px;"></i>
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <h6 class="mb-0 text-muted">Active Loans</h6>
+                            <h4 class="mb-0 text-info">{{ active_loans_count }}</h4>
+                            <small class="text-muted">{{ completed_loans_count }} completed</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-md-6 mb-3">
+            <div class="card border-success">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0">
+                            <i class="align-middle text-success" data-feather="percent" style="width: 32px; height: 32px;"></i>
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <h6 class="mb-0 text-muted">Total Interest Paid</h6>
+                            <h4 class="mb-0 text-success">Rs. {{ total_interest_paid|floatformat:2 }}</h4>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6 mb-3">
+            <div class="card border-primary">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0">
+                            <i class="align-middle text-primary" data-feather="dollar-sign" style="width: 32px; height: 32px;"></i>
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <h6 class="mb-0 text-muted">Total Principal Paid</h6>
+                            <h4 class="mb-0 text-primary">Rs. {{ total_principal_paid|floatformat:2 }}</h4>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Membership Deposits Table -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="card-title mb-0">Membership Deposits</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Membership</th>
+                            <th>Amount</th>
+                            <th>Date</th>
+                            <th>Payment Status</th>
+                            <th>Paid Date</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for deposit in deposits %}
+                        <tr>
+                            <td>{{ deposit.membership.name }}</td>
+                            <td><strong>Rs. {{ deposit.amount|floatformat:2 }}</strong></td>
+                            <td>{{ deposit.date|date:"Y-m-d" }}</td>
+                            <td>
+                                {% if deposit.payment_status == 'paid' %}
+                                    <span class="badge bg-success">Paid</span>
+                                {% else %}
+                                    <span class="badge bg-warning">Pending</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ deposit.paid_date|date:"Y-m-d"|default:"-" }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="5" class="text-center text-muted">No deposits found</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loans Table -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="card-title mb-0">Loans</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Principal</th>
+                            <th>Interest Rate</th>
+                            <th>Total Payable</th>
+                            <th>Timeline</th>
+                            <th>Status</th>
+                            <th>Applied Date</th>
+                            <th>Paid Principal</th>
+                            <th>Remaining</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for loan in loans %}
+                        <tr>
+                            <td><strong>Rs. {{ loan.principal_amount|floatformat:2 }}</strong></td>
+                            <td>{{ loan.interest_rate }}%</td>
+                            <td>Rs. {{ loan.total_payable|floatformat:2 }}</td>
+                            <td>{{ loan.timeline }} months</td>
+                            <td>
+                                {% if loan.status == 'pending' %}
+                                    <span class="badge bg-warning">Pending</span>
+                                {% elif loan.status == 'approved' %}
+                                    <span class="badge bg-info">Approved</span>
+                                {% elif loan.status == 'active' %}
+                                    <span class="badge bg-success">Active</span>
+                                {% elif loan.status == 'completed' %}
+                                    <span class="badge bg-primary">Completed</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">{{ loan.status }}</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ loan.applied_date|date:"Y-m-d" }}</td>
+                            <td>Rs. {{ loan.get_total_paid_principle|floatformat:2 }}</td>
+                            <td><strong>Rs. {{ loan.get_remaining_principle|floatformat:2 }}</strong></td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="8" class="text-center text-muted">No loans found</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Interest Payments Table -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="card-title mb-0">Interest Payments</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Loan ID</th>
+                            <th>Amount</th>
+                            <th>Payment Status</th>
+                            <th>Paid Date</th>
+                            <th>Name</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for payment in interest_payments %}
+                        <tr>
+                            <td>Loan #{{ payment.loan.id }}</td>
+                            <td><strong>Rs. {{ payment.amount|floatformat:2 }}</strong></td>
+                            <td>
+                                {% if payment.payment_status == 'paid' %}
+                                    <span class="badge bg-success">Paid</span>
+                                {% else %}
+                                    <span class="badge bg-warning">Pending</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ payment.paid_date|date:"Y-m-d"|default:"-" }}</td>
+                            <td>{{ payment.name|default:"-" }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="5" class="text-center text-muted">No interest payments found</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Principle Payments Table -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="card-title mb-0">Principle Payments</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Loan ID</th>
+                            <th>Amount</th>
+                            <th>Payment Status</th>
+                            <th>Paid Date</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for payment in principle_payments %}
+                        <tr>
+                            <td>Loan #{{ payment.loan.id }}</td>
+                            <td><strong>Rs. {{ payment.amount|floatformat:2 }}</strong></td>
+                            <td>
+                                {% if payment.payment_status == 'paid' %}
+                                    <span class="badge bg-success">Paid</span>
+                                {% else %}
+                                    <span class="badge bg-warning">Pending</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ payment.paid_date|date:"Y-m-d"|default:"-" }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="4" class="text-center text-muted">No principle payments found</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="card">
+        <div class="card-body text-center">
+            <p class="text-muted">Please select a user to view the report</p>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<style>
+@media print {
+    .card-header, .btn, nav, .sidebar { display: none !important; }
+    .card { border: none !important; box-shadow: none !important; }
+    body { padding: 0 !important; }
+    .table { font-size: 0.8rem; }
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    if (typeof feather !== 'undefined') {
+        feather.replace();
+    }
+</script>
+{% endblock %}
+

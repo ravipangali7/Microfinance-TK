@@ -1,0 +1,350 @@
+{% extends 'core/layouts/base.html' %}
+
+{% block content %}
+<div class="container-fluid p-0">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3 mb-0">
+            <i class="align-middle me-2" data-feather="file-text"></i>
+            Main System Report
+        </h1>
+        <button onclick="window.print()" class="btn btn-primary">
+            <i class="align-middle me-1" data-feather="printer"></i> Print Report
+        </button>
+    </div>
+
+    <!-- Filter Section -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="card-title mb-0">Filter Options</h5>
+        </div>
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-5">
+                    <label class="form-label">From Date</label>
+                    <input type="date" name="from_date" class="form-control" value="{{ from_date }}" required>
+                </div>
+                <div class="col-md-5">
+                    <label class="form-label">To Date</label>
+                    <input type="date" name="to_date" class="form-control" value="{{ to_date }}" required>
+                </div>
+                <div class="col-md-2 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="align-middle me-1" data-feather="search"></i> Filter
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- System Overview Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3 mb-3">
+            <div class="card border-primary">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0">
+                            <i class="align-middle text-primary" data-feather="dollar-sign" style="width: 32px; height: 32px;"></i>
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <h6 class="mb-0 text-muted">System Balance</h6>
+                            <h4 class="mb-0 text-primary">Rs. {{ system_balance|floatformat:2 }}</h4>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card border-success">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0">
+                            <i class="align-middle text-success" data-feather="trending-up" style="width: 32px; height: 32px;"></i>
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <h6 class="mb-0 text-muted">Deposits Collected</h6>
+                            <h4 class="mb-0 text-success">Rs. {{ total_deposits_paid|floatformat:2 }}</h4>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card border-info">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0">
+                            <i class="align-middle text-info" data-feather="credit-card" style="width: 32px; height: 32px;"></i>
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <h6 class="mb-0 text-muted">Loans Disbursed</h6>
+                            <h4 class="mb-0 text-info">Rs. {{ total_loans_disbursed|floatformat:2 }}</h4>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card border-warning">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0">
+                            <i class="align-middle text-warning" data-feather="percent" style="width: 32px; height: 32px;"></i>
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <h6 class="mb-0 text-muted">Interest Collected</h6>
+                            <h4 class="mb-0 text-warning">Rs. {{ total_interest_collected|floatformat:2 }}</h4>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-md-3 mb-3">
+            <div class="card border-success">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0">
+                            <i class="align-middle text-success" data-feather="check-circle" style="width: 32px; height: 32px;"></i>
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <h6 class="mb-0 text-muted">Principal Collected</h6>
+                            <h4 class="mb-0 text-success">Rs. {{ total_principal_collected|floatformat:2 }}</h4>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card border-primary">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0">
+                            <i class="align-middle text-primary" data-feather="users" style="width: 32px; height: 32px;"></i>
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <h6 class="mb-0 text-muted">Active Users</h6>
+                            <h4 class="mb-0 text-primary">{{ total_active_users }}</h4>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card border-info">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0">
+                            <i class="align-middle text-info" data-feather="activity" style="width: 32px; height: 32px;"></i>
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <h6 class="mb-0 text-muted">Active Loans</h6>
+                            <h4 class="mb-0 text-info">{{ total_active_loans }}</h4>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card border-danger">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0">
+                            <i class="align-middle text-danger" data-feather="alert-circle" style="width: 32px; height: 32px;"></i>
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <h6 class="mb-0 text-muted">Pending Amount</h6>
+                            <h4 class="mb-0 text-danger">Rs. {{ total_pending_all|floatformat:2 }}</h4>
+                            <small class="text-muted">Deposits + Payments</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pending Breakdown -->
+    <div class="row mb-4">
+        <div class="col-md-6 mb-3">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Pending Deposits</h5>
+                </div>
+                <div class="card-body">
+                    <h3 class="mb-0">Rs. {{ total_pending_deposits|floatformat:2 }}</h3>
+                    <p class="text-muted mb-0">Total pending membership deposits</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6 mb-3">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Pending Payments</h5>
+                </div>
+                <div class="card-body">
+                    <h3 class="mb-0">Rs. {{ total_pending_payments|floatformat:2 }}</h3>
+                    <p class="text-muted mb-0">Total pending interest and principle payments</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Top Users by Deposits -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Top Users by Deposits</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Rank</th>
+                                    <th>User</th>
+                                    <th>Phone</th>
+                                    <th>Total Deposits</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for u in top_users_by_deposits %}
+                                <tr>
+                                    <td><strong>#{{ forloop.counter }}</strong></td>
+                                    <td>{{ u.name }}</td>
+                                    <td>{{ u.phone }}</td>
+                                    <td><strong>Rs. {{ u.total_deposits|floatformat:2 }}</strong></td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="4" class="text-center text-muted">No data available</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Top Users by Loans</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Rank</th>
+                                    <th>User</th>
+                                    <th>Phone</th>
+                                    <th>Total Loans</th>
+                                    <th>Count</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for u in top_users_by_loans %}
+                                <tr>
+                                    <td><strong>#{{ forloop.counter }}</strong></td>
+                                    <td>{{ u.name }}</td>
+                                    <td>{{ u.phone }}</td>
+                                    <td><strong>Rs. {{ u.total_loans|floatformat:2 }}</strong></td>
+                                    <td>{{ u.loans_count }}</td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="5" class="text-center text-muted">No data available</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Transactions -->
+    <div class="card">
+        <div class="card-header">
+            <h5 class="card-title mb-0">Recent Transactions</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Transaction ID</th>
+                            <th>User</th>
+                            <th>Payment Type</th>
+                            <th>Payment Method</th>
+                            <th>Amount</th>
+                            <th>Status</th>
+                            <th>Date</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for transaction in recent_transactions %}
+                        <tr>
+                            <td><code>{{ transaction.client_txn_id|truncatechars:20 }}</code></td>
+                            <td>{{ transaction.user.name }}<br><small class="text-muted">{{ transaction.user.phone }}</small></td>
+                            <td>
+                                {% if transaction.payment_type == 'deposit' %}
+                                    <span class="badge bg-info">Membership Deposit</span>
+                                {% elif transaction.payment_type == 'interest' %}
+                                    <span class="badge bg-warning">Interest Payment</span>
+                                {% elif transaction.payment_type == 'principle' %}
+                                    <span class="badge bg-primary">Principle Payment</span>
+                                {% else %}
+                                    {{ transaction.get_payment_type_display }}
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if transaction.payment_method == 'cash' %}
+                                    <span class="badge bg-success">Cash</span>
+                                {% else %}
+                                    <span class="badge bg-primary">Gateway/UPI</span>
+                                {% endif %}
+                            </td>
+                            <td><strong>Rs. {{ transaction.amount|floatformat:2 }}</strong></td>
+                            <td>
+                                {% if transaction.status == 'success' %}
+                                    <span class="badge bg-success">Success</span>
+                                {% else %}
+                                    <span class="badge bg-warning">{{ transaction.status }}</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ transaction.txn_date|date:"Y-m-d" }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="7" class="text-center text-muted">No transactions found</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+@media print {
+    .card-header, .btn, nav, .sidebar { display: none !important; }
+    .card { border: none !important; box-shadow: none !important; }
+    body { padding: 0 !important; }
+    .table { font-size: 0.8rem; }
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    if (typeof feather !== 'undefined') {
+        feather.replace();
+    }
+</script>
+{% endblock %}
+

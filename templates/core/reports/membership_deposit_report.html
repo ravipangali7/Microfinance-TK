@@ -1,0 +1,207 @@
+{% extends 'core/layouts/base.html' %}
+
+{% block content %}
+<div class="container-fluid p-0">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3 mb-0">
+            <i class="align-middle me-2" data-feather="file-text"></i>
+            Membership Deposit Report
+        </h1>
+        <button onclick="window.print()" class="btn btn-primary">
+            <i class="align-middle me-1" data-feather="printer"></i> Print Report
+        </button>
+    </div>
+
+    <!-- Filter Section -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="card-title mb-0">Filter Options</h5>
+        </div>
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-5">
+                    <label class="form-label">From Date</label>
+                    <input type="date" name="from_date" class="form-control" value="{{ from_date }}" required>
+                </div>
+                <div class="col-md-5">
+                    <label class="form-label">To Date</label>
+                    <input type="date" name="to_date" class="form-control" value="{{ to_date }}" required>
+                </div>
+                <div class="col-md-2 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="align-middle me-1" data-feather="search"></i> Filter
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Summary Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3 mb-3">
+            <div class="card border-success">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0">
+                            <i class="align-middle text-success" data-feather="dollar-sign" style="width: 32px; height: 32px;"></i>
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <h6 class="mb-0 text-muted">Total Paid</h6>
+                            <h4 class="mb-0 text-success">Rs. {{ total_paid|floatformat:2 }}</h4>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card border-warning">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0">
+                            <i class="align-middle text-warning" data-feather="clock" style="width: 32px; height: 32px;"></i>
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <h6 class="mb-0 text-muted">Total Pending</h6>
+                            <h4 class="mb-0 text-warning">Rs. {{ total_pending|floatformat:2 }}</h4>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card border-info">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0">
+                            <i class="align-middle text-info" data-feather="hash" style="width: 32px; height: 32px;"></i>
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <h6 class="mb-0 text-muted">Total Count</h6>
+                            <h4 class="mb-0 text-info">{{ total_count }}</h4>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card border-primary">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0">
+                            <i class="align-middle text-primary" data-feather="trending-up" style="width: 32px; height: 32px;"></i>
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <h6 class="mb-0 text-muted">Average Amount</h6>
+                            <h4 class="mb-0 text-primary">Rs. {{ avg_amount|floatformat:2 }}</h4>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Status Breakdown -->
+    <div class="row mb-4">
+        <div class="col-md-6 mb-3">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Payment Status Breakdown</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span>Paid</span>
+                        <span class="badge bg-success">{{ paid_count }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span>Pending</span>
+                        <span class="badge bg-warning">{{ pending_count }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6 mb-3">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Deposits by Membership Type</h5>
+                </div>
+                <div class="card-body">
+                    {% for item in deposits_by_membership %}
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span>{{ item.membership__name|default:"Unknown" }}</span>
+                        <span><strong>Rs. {{ item.total|floatformat:2 }}</strong> ({{ item.count }})</span>
+                    </div>
+                    {% empty %}
+                    <p class="text-muted mb-0">No deposits found</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Detailed Table -->
+    <div class="card">
+        <div class="card-header">
+            <h5 class="card-title mb-0">Detailed Deposit Records</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>User</th>
+                            <th>Phone</th>
+                            <th>Membership</th>
+                            <th>Amount</th>
+                            <th>Date</th>
+                            <th>Payment Status</th>
+                            <th>Paid Date</th>
+                            <th>Created At</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for deposit in deposits %}
+                        <tr>
+                            <td>{{ deposit.user.name }}</td>
+                            <td>{{ deposit.user.phone }}</td>
+                            <td>{{ deposit.membership.name }}</td>
+                            <td><strong>Rs. {{ deposit.amount|floatformat:2 }}</strong></td>
+                            <td>{{ deposit.date|date:"Y-m-d" }}</td>
+                            <td>
+                                {% if deposit.payment_status == 'paid' %}
+                                    <span class="badge bg-success">Paid</span>
+                                {% else %}
+                                    <span class="badge bg-warning">Pending</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ deposit.paid_date|date:"Y-m-d"|default:"-" }}</td>
+                            <td>{{ deposit.created_at|date:"Y-m-d H:i" }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="8" class="text-center text-muted">No deposits found for the selected date range</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+@media print {
+    .card-header, .btn, nav, .sidebar { display: none !important; }
+    .card { border: none !important; box-shadow: none !important; }
+    body { padding: 0 !important; }
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    if (typeof feather !== 'undefined') {
+        feather.replace();
+    }
+</script>
+{% endblock %}
+

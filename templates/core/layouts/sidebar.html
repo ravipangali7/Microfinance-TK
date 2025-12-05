@@ -85,6 +85,34 @@
             {% endif %}
 
             <li class="sidebar-header">
+                Reports
+            </li>
+
+            <li class="sidebar-item">
+                <a class="sidebar-link" href="{% url 'membership_deposit_report' %}">
+                    <i class="align-middle" data-feather="file-text"></i> <span class="align-middle">Membership Deposit Report</span>
+                </a>
+            </li>
+
+            <li class="sidebar-item">
+                <a class="sidebar-link" href="{% url 'loan_report' %}">
+                    <i class="align-middle" data-feather="file-text"></i> <span class="align-middle">Loan Report</span>
+                </a>
+            </li>
+
+            <li class="sidebar-item">
+                <a class="sidebar-link" href="{% url 'user_report' %}">
+                    <i class="align-middle" data-feather="file-text"></i> <span class="align-middle">User Report</span>
+                </a>
+            </li>
+
+            <li class="sidebar-item">
+                <a class="sidebar-link" href="{% url 'main_report' %}">
+                    <i class="align-middle" data-feather="file-text"></i> <span class="align-middle">Main Report</span>
+                </a>
+            </li>
+
+            <li class="sidebar-header">
                 Configuration
             </li>
 

@@ -17,6 +17,7 @@ from app.views.admin import (
     push_notification_list, push_notification_create, push_notification_update,
     push_notification_delete, push_notification_view, send_push_notification_view,
     payment_transaction_list, payment_transaction_view,
+    membership_deposit_report, loan_report, user_report, main_report,
 )
 
 urlpatterns = [
@@ -107,5 +108,11 @@ urlpatterns = [
     # Payment Transaction
     path('payment-transactions/', payment_transaction_list, name='payment_transaction_list'),
     path('payment-transactions/<int:pk>/', payment_transaction_view, name='payment_transaction_view'),
+    
+    # Reports
+    path('reports/membership-deposits/', membership_deposit_report, name='membership_deposit_report'),
+    path('reports/loans/', loan_report, name='loan_report'),
+    path('reports/users/', user_report, name='user_report'),
+    path('reports/main/', main_report, name='main_report'),
 ]
 
