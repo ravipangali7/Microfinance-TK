@@ -26,6 +26,11 @@ class PaymentStatus(models.TextChoices):
     PAID = 'paid', 'Paid'
 
 
+class PenaltyType(models.TextChoices):
+    DEPOSIT = 'deposit', 'Deposit'
+    INTEREST = 'interest', 'Interest'
+
+
 class WithdrawalStatus(models.TextChoices):
     PENDING = 'pending', 'Pending'
     APPROVED = 'approved', 'Approved'
@@ -221,6 +226,22 @@ class MonthlyMembershipDeposit(TimeStampedModel):
                     customer_name=self.user.name if self.user.name else None
                 )
 
+    def get_total_penalties(self):
+        """Calculate total penalties for this deposit"""
+        # Lazy import to avoid circular reference
+        from django.apps import apps
+        try:
+            Penalty = apps.get_model('app', 'Penalty')
+            return sum(
+                penalty.penalty_amount for penalty in Penalty.objects.filter(
+                    penalty_type='deposit',
+                    related_object_id=self.pk,
+                    payment_status=PaymentStatus.PENDING
+                )
+            )
+        except (LookupError, AttributeError):
+            return Decimal('0.00')
+    
     def delete(self, *args, **kwargs):
         # If deposit was paid, subtract from balance
         if self.payment_status == PaymentStatus.PAID:
@@ -388,6 +409,22 @@ class LoanInterestPayment(TimeStampedModel):
                     customer_name=self.loan.user.name if self.loan.user.name else None
                 )
 
+    def get_total_penalties(self):
+        """Calculate total penalties for this interest payment"""
+        # Lazy import to avoid circular reference
+        from django.apps import apps
+        try:
+            Penalty = apps.get_model('app', 'Penalty')
+            return sum(
+                penalty.penalty_amount for penalty in Penalty.objects.filter(
+                    penalty_type='interest',
+                    related_object_id=self.pk,
+                    payment_status=PaymentStatus.PENDING
+                )
+            )
+        except (LookupError, AttributeError):
+            return Decimal('0.00')
+    
     def delete(self, *args, **kwargs):
         # If payment was paid, subtract from balance
         if self.payment_status == PaymentStatus.PAID:
@@ -539,6 +576,18 @@ class MySetting(TimeStampedModel):
         default=False,
         help_text='Mark this update as mandatory (users cannot skip)'
     )
+    
+    # Penalty Settings
+    default_penalty_amount = models.DecimalField(
+        max_digits=15,
+        decimal_places=2,
+        help_text='Default penalty amount per month (compounds by doubling each month)',
+        default=Decimal('1000.00')
+    )
+    penalty_grace_period_days = models.IntegerField(
+        help_text='Number of days after due date before penalty is applied',
+        default=0
+    )
 
     class Meta:
         verbose_name = 'My Setting'
@@ -557,6 +606,15 @@ class MySetting(TimeStampedModel):
         if self.loan_interest_payment_date < 1 or self.loan_interest_payment_date > 31:
             raise ValidationError({
                 'loan_interest_payment_date': 'Day of month must be between 1 and 31.'
+            })
+        # Validate penalty settings
+        if self.default_penalty_amount < 0:
+            raise ValidationError({
+                'default_penalty_amount': 'Penalty amount must be greater than or equal to 0.'
+            })
+        if self.penalty_grace_period_days < 0:
+            raise ValidationError({
+                'penalty_grace_period_days': 'Grace period days must be greater than or equal to 0.'
             })
 
     def save(self, *args, **kwargs):
@@ -774,6 +832,81 @@ class SupportTicketReply(TimeStampedModel):
     
     def __str__(self):
         return f"Reply to {self.ticket.subject} by {self.user.name}"
+
+
+# Penalty Model
+class Penalty(TimeStampedModel):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='penalties')
+    penalty_type = models.CharField(max_length=20, choices=PenaltyType.choices)
+    related_object_id = models.IntegerField(help_text='ID of MonthlyMembershipDeposit or LoanInterestPayment')
+    related_object_type = models.CharField(max_length=50, help_text='Type of related object: deposit or interest')
+    base_amount = models.DecimalField(max_digits=15, decimal_places=2, help_text='Base penalty amount from settings')
+    month_number = models.IntegerField(help_text='Month number overdue (1, 2, 3, etc.)')
+    penalty_amount = models.DecimalField(max_digits=15, decimal_places=2, help_text='Calculated penalty amount (base × 2^(month-1))')
+    total_penalty = models.DecimalField(max_digits=15, decimal_places=2, help_text='Total penalty amount for this payment (cumulative)')
+    payment_status = models.CharField(max_length=20, choices=PaymentStatus.choices, default=PaymentStatus.PENDING)
+    due_date = models.DateField(help_text='Date when penalty was applied')
+    paid_date = models.DateField(blank=True, null=True, help_text='Date when penalty was paid')
+    
+    class Meta:
+        verbose_name = 'Penalty'
+        verbose_name_plural = 'Penalties'
+        ordering = ['-due_date', '-created_at']
+        indexes = [
+            models.Index(fields=['user']),
+            models.Index(fields=['penalty_type']),
+            models.Index(fields=['related_object_id']),
+            models.Index(fields=['payment_status']),
+        ]
+    
+    def __str__(self):
+        return f"{self.user.name} - {self.get_penalty_type_display()} - Month {self.month_number} - {self.penalty_amount}"
+    
+    def calculate_penalty_amount(self):
+        """Calculate penalty amount: base_amount × 2^(month_number-1)"""
+        from decimal import Decimal
+        multiplier = Decimal(2) ** (self.month_number - 1)
+        return self.base_amount * multiplier
+    
+    def save(self, *args, **kwargs):
+        # Auto-calculate penalty amount if not set
+        if not self.penalty_amount or self.penalty_amount == 0:
+            self.penalty_amount = self.calculate_penalty_amount()
+        
+        # Calculate total penalty for this payment
+        if self.pk:
+            # Get all penalties for this payment
+            total = self.__class__.objects.filter(
+                penalty_type=self.penalty_type,
+                related_object_id=self.related_object_id,
+                payment_status=PaymentStatus.PENDING
+            ).exclude(pk=self.pk).aggregate(
+                total=models.Sum('penalty_amount')
+            )['total'] or Decimal('0.00')
+            self.total_penalty = total + self.penalty_amount
+        else:
+            # For new penalty, calculate total including this one
+            total = self.__class__.objects.filter(
+                penalty_type=self.penalty_type,
+                related_object_id=self.related_object_id,
+                payment_status=PaymentStatus.PENDING
+            ).aggregate(
+                total=models.Sum('penalty_amount')
+            )['total'] or Decimal('0.00')
+            self.total_penalty = total + self.penalty_amount
+        
+        super().save(*args, **kwargs)
+    
+    @classmethod
+    def get_total_for_payment(cls, penalty_type, related_object_id):
+        """Get total penalty amount for a specific payment"""
+        return sum(
+            penalty.penalty_amount for penalty in cls.objects.filter(
+                penalty_type=penalty_type,
+                related_object_id=related_object_id,
+                payment_status=PaymentStatus.PENDING
+            )
+        )
 
 
 # Helper function to update system balance safely

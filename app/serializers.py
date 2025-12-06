@@ -3,7 +3,8 @@ from django.contrib.auth import authenticate
 from .models import (
     User, Membership, MembershipUser, MonthlyMembershipDeposit,
     Loan, LoanInterestPayment, LoanPrinciplePayment, FundManagement, MySetting,
-    PaymentTransaction, PushNotification, Popup, SupportTicket, SupportTicketReply
+    PaymentTransaction, PushNotification, Popup, SupportTicket, SupportTicketReply,
+    Penalty
 )
 
 
@@ -273,6 +274,7 @@ class MySettingSerializer(serializers.ModelSerializer):
             'loan_interest_rate', 'loan_timeline', 'balance',
             'latest_app_version', 'latest_version_code', 'apk_file',
             'update_message', 'release_notes', 'mandatory_update',
+            'default_penalty_amount', 'penalty_grace_period_days',
             'apk_url', 'created_at', 'updated_at'
         ]
         read_only_fields = ['id', 'created_at', 'updated_at', 'apk_url']
@@ -419,3 +421,60 @@ class SupportTicketSerializer(serializers.ModelSerializer):
             if request and request.user:
                 validated_data['user_id'] = request.user.id
         return super().create(validated_data)
+
+
+class PenaltySerializer(serializers.ModelSerializer):
+    user = UserSerializer(read_only=True)
+    total_penalty_for_payment = serializers.SerializerMethodField()
+    is_overdue = serializers.SerializerMethodField()
+    related_object = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = Penalty
+        fields = [
+            'id', 'user', 'penalty_type', 'related_object_id', 'related_object_type',
+            'base_amount', 'month_number', 'penalty_amount', 'total_penalty',
+            'total_penalty_for_payment', 'payment_status', 'due_date', 'paid_date',
+            'is_overdue', 'related_object', 'created_at', 'updated_at'
+        ]
+        read_only_fields = ['id', 'created_at', 'updated_at', 'total_penalty_for_payment', 'is_overdue']
+    
+    def get_total_penalty_for_payment(self, obj):
+        """Get total penalty amount for the related payment"""
+        return float(Penalty.get_total_for_payment(obj.penalty_type, obj.related_object_id))
+    
+    def get_is_overdue(self, obj):
+        """Check if penalty is overdue"""
+        from django.utils import timezone
+        return obj.payment_status == 'pending' and timezone.now().date() > obj.due_date
+    
+    def get_related_object(self, obj):
+        """Get related object (deposit or interest payment)"""
+        from django.apps import apps
+        try:
+            if obj.penalty_type == 'deposit':
+                Deposit = apps.get_model('app', 'MonthlyMembershipDeposit')
+                deposit = Deposit.objects.filter(pk=obj.related_object_id).first()
+                if deposit:
+                    return {
+                        'id': deposit.pk,
+                        'amount': float(deposit.amount),
+                        'date': deposit.date.isoformat() if deposit.date else None,
+                        'payment_status': deposit.payment_status,
+                        'name': deposit.name
+                    }
+            elif obj.penalty_type == 'interest':
+                InterestPayment = apps.get_model('app', 'LoanInterestPayment')
+                payment = InterestPayment.objects.filter(pk=obj.related_object_id).first()
+                if payment:
+                    return {
+                        'id': payment.pk,
+                        'amount': float(payment.amount),
+                        'paid_date': payment.paid_date.isoformat() if payment.paid_date else None,
+                        'payment_status': payment.payment_status,
+                        'name': payment.name,
+                        'loan_id': payment.loan_id
+                    }
+        except (LookupError, AttributeError):
+            pass
+        return None

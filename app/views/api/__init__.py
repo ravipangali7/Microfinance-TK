@@ -60,6 +60,10 @@ from .support_ticket_api_views import (
     support_ticket_reply_api,
 )
 from .update_api_views import check_update_api
+from .penalty_api_views import (
+    penalty_list_api, penalty_detail_api, penalty_summary_api,
+    penalty_mark_paid_api, penalty_adjust_api
+)
 
 __all__ = [
     'login_api', 'logout_api', 'current_user_api',
@@ -86,4 +90,6 @@ __all__ = [
     'support_ticket_detail_api',
     'support_ticket_reply_api',
     'check_update_api',
+    'penalty_list_api', 'penalty_detail_api', 'penalty_summary_api',
+    'penalty_mark_paid_api', 'penalty_adjust_api',
 ]

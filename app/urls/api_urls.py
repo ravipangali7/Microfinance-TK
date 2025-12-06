@@ -42,6 +42,8 @@ from app.views.api import (
     support_ticket_reply_api,
     # App Update
     check_update_api,
+    # Penalties
+    penalty_list_api, penalty_detail_api, penalty_summary_api, penalty_mark_paid_api, penalty_adjust_api,
 )
 
 urlpatterns = [
@@ -146,4 +148,11 @@ urlpatterns = [
     
     # App Update
     path('app/check-update/', check_update_api, name='api_check_update'),
+    
+    # Penalties
+    path('penalties/', penalty_list_api, name='api_penalty_list'),
+    path('penalties/<int:pk>/', penalty_detail_api, name='api_penalty_detail'),
+    path('penalties/summary/', penalty_summary_api, name='api_penalty_summary'),
+    path('penalties/<int:pk>/mark-paid/', penalty_mark_paid_api, name='api_penalty_mark_paid'),
+    path('penalties/<int:pk>/adjust/', penalty_adjust_api, name='api_penalty_adjust'),
 ]

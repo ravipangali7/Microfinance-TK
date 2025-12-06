@@ -5,7 +5,7 @@ from .models import (
     User, Membership, MembershipUser, MonthlyMembershipDeposit,
     Loan, LoanInterestPayment, LoanPrinciplePayment, FundManagement, MySetting,
     PaymentTransaction, PushNotification, Popup, SupportTicket, SupportTicketReply,
-    LoanStatus, PaymentStatus, WithdrawalStatus, SupportTicketStatus
+    Penalty, LoanStatus, PaymentStatus, WithdrawalStatus, SupportTicketStatus
 )
 
 
@@ -204,6 +204,9 @@ class MySettingAdmin(admin.ModelAdmin):
         ('System Settings', {
             'fields': ('membership_deposit_date', 'loan_interest_payment_date', 'loan_interest_rate', 'loan_timeline', 'balance')
         }),
+        ('Penalty Settings', {
+            'fields': ('default_penalty_amount', 'penalty_grace_period_days')
+        }),
         ('App Update Settings', {
             'fields': ('latest_app_version', 'latest_version_code', 'apk_file', 'update_message', 'release_notes', 'mandatory_update')
         }),
@@ -283,3 +286,57 @@ class SupportTicketReplyAdmin(admin.ModelAdmin):
     raw_id_fields = ['ticket', 'user']
     date_hierarchy = 'created_at'
     ordering = ['created_at']
+
+
+@admin.register(Penalty)
+class PenaltyAdmin(admin.ModelAdmin):
+    list_display = ['user', 'penalty_type', 'month_number', 'penalty_amount', 'total_penalty', 'payment_status', 'due_date', 'created_at']
+    list_filter = ['penalty_type', 'payment_status', 'due_date', 'created_at']
+    search_fields = ['user__name', 'user__phone']
+    readonly_fields = ['created_at', 'updated_at', 'total_penalty']
+    raw_id_fields = ['user']
+    date_hierarchy = 'due_date'
+    ordering = ['-due_date', '-created_at']
+    actions = ['mark_as_paid', 'send_notification']
+    
+    fieldsets = (
+        ('Penalty Information', {
+            'fields': ('user', 'penalty_type', 'related_object_id', 'related_object_type')
+        }),
+        ('Penalty Details', {
+            'fields': ('base_amount', 'month_number', 'penalty_amount', 'total_penalty')
+        }),
+        ('Payment Status', {
+            'fields': ('payment_status', 'due_date', 'paid_date')
+        }),
+        ('Timestamps', {
+            'fields': ('created_at', 'updated_at')
+        }),
+    )
+    
+    def mark_as_paid(self, request, queryset):
+        """Mark selected penalties as paid"""
+        from django.utils import timezone
+        updated = queryset.filter(payment_status=PaymentStatus.PENDING).update(
+            payment_status=PaymentStatus.PAID,
+            paid_date=timezone.now().date()
+        )
+        self.message_user(request, f'{updated} penalty(ies) marked as paid.')
+    mark_as_paid.short_description = 'Mark selected penalties as paid'
+    
+    def send_notification(self, request, queryset):
+        """Send notification to users with selected penalties"""
+        from app.services.push_notification_service import send_notification_to_user
+        sent = 0
+        for penalty in queryset:
+            try:
+                send_notification_to_user(
+                    penalty.user,
+                    'Penalty Reminder',
+                    f'You have an outstanding penalty of {penalty.penalty_amount} for {penalty.get_penalty_type_display()}. Total due: {penalty.total_penalty}',
+                )
+                sent += 1
+            except Exception as e:
+                self.message_user(request, f'Failed to send notification to {penalty.user.name}: {str(e)}', level='ERROR')
+        self.message_user(request, f'Notifications sent to {sent} user(s).')
+    send_notification.short_description = 'Send notification to users'

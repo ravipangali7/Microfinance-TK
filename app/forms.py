@@ -366,6 +366,7 @@ class MySettingForm(forms.ModelForm):
         fields = [
             'membership_deposit_date', 'loan_interest_payment_date',
             'loan_interest_rate', 'loan_timeline', 'balance',
+            'default_penalty_amount', 'penalty_grace_period_days',
             'latest_app_version', 'latest_version_code', 'apk_file',
             'update_message', 'release_notes', 'mandatory_update'
         ]
@@ -375,6 +376,8 @@ class MySettingForm(forms.ModelForm):
             'loan_interest_rate': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
             'loan_timeline': forms.NumberInput(attrs={'class': 'form-control'}),
             'balance': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
+            'default_penalty_amount': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'min': 0}),
+            'penalty_grace_period_days': forms.NumberInput(attrs={'class': 'form-control', 'min': 0}),
             'latest_app_version': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'e.g., 1.0.1'}),
             'latest_version_code': forms.NumberInput(attrs={'class': 'form-control', 'min': 1}),
             'apk_file': forms.FileInput(attrs={'class': 'form-control', 'accept': '.apk'}),
@@ -396,6 +399,18 @@ class MySettingForm(forms.ModelForm):
         if loan_interest_payment_date and (loan_interest_payment_date < 1 or loan_interest_payment_date > 31):
             raise forms.ValidationError({
                 'loan_interest_payment_date': 'Day of month must be between 1 and 31.'
+            })
+        
+        default_penalty_amount = cleaned_data.get('default_penalty_amount')
+        if default_penalty_amount is not None and default_penalty_amount < 0:
+            raise forms.ValidationError({
+                'default_penalty_amount': 'Penalty amount must be greater than or equal to 0.'
+            })
+        
+        penalty_grace_period_days = cleaned_data.get('penalty_grace_period_days')
+        if penalty_grace_period_days is not None and penalty_grace_period_days < 0:
+            raise forms.ValidationError({
+                'penalty_grace_period_days': 'Grace period days must be greater than or equal to 0.'
             })
         
         return cleaned_data
