@@ -6,6 +6,9 @@ from django.shortcuts import get_object_or_404
 from app.models import User
 from app.serializers import UserSerializer
 from app.views.admin.helpers import is_admin, is_admin_or_board, is_member
+from app.views.admin.filter_helpers import (
+    apply_text_search, apply_date_filter, parse_date_range
+)
 
 
 @api_view(['GET'])
@@ -19,7 +22,30 @@ def user_list_api(request):
             status=status.HTTP_403_FORBIDDEN
         )
     
-    users = User.objects.all().order_by('-created_at')
+    users = User.objects.all()
+    
+    # Apply search filter
+    search = request.query_params.get('search', '').strip()
+    if search:
+        users = apply_text_search(users, search, ['name', 'phone'])
+    
+    # Apply status filter
+    status_filter = request.query_params.get('status', '').strip()
+    if status_filter:
+        if status_filter.lower() == 'active':
+            users = users.filter(is_active=True)
+        elif status_filter.lower() == 'inactive':
+            users = users.filter(is_active=False)
+    
+    # Apply date range filter
+    date_range_str = request.query_params.get('date_range', '').strip()
+    if date_range_str:
+        date_range = parse_date_range(date_range_str)
+        if date_range:
+            start_date, end_date = date_range
+            users = apply_date_filter(users, 'created_at', start_date, end_date)
+    
+    users = users.order_by('-created_at')
     serializer = UserSerializer(users, many=True)
     return Response(serializer.data, status=status.HTTP_200_OK)
 

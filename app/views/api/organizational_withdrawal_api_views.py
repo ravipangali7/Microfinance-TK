@@ -6,6 +6,9 @@ from django.shortcuts import get_object_or_404
 from app.models import OrganizationalWithdrawal
 from app.serializers import OrganizationalWithdrawalSerializer
 from app.views.admin.helpers import is_admin_or_board, is_admin_board_or_staff
+from app.views.admin.filter_helpers import (
+    apply_text_search, apply_date_filter, apply_amount_range_filter, parse_date_range
+)
 
 
 @api_view(['GET'])
@@ -19,7 +22,28 @@ def organizational_withdrawal_list_api(request):
             status=status.HTTP_403_FORBIDDEN
         )
     
-    withdrawals = OrganizationalWithdrawal.objects.all().order_by('-date', '-created_at')
+    withdrawals = OrganizationalWithdrawal.objects.all()
+    
+    # Apply search filter
+    search = request.query_params.get('search', '').strip()
+    if search:
+        withdrawals = apply_text_search(withdrawals, search, ['description', 'purpose'])
+    
+    # Apply date range filter
+    date_range_str = request.query_params.get('date_range', '').strip()
+    if date_range_str:
+        date_range = parse_date_range(date_range_str)
+        if date_range:
+            start_date, end_date = date_range
+            withdrawals = apply_date_filter(withdrawals, 'date', start_date, end_date)
+    
+    # Apply amount range filter
+    min_amount = request.query_params.get('min_amount', '').strip()
+    max_amount = request.query_params.get('max_amount', '').strip()
+    if min_amount or max_amount:
+        withdrawals = apply_amount_range_filter(withdrawals, 'amount', min_amount, max_amount)
+    
+    withdrawals = withdrawals.order_by('-date', '-created_at')
     serializer = OrganizationalWithdrawalSerializer(withdrawals, many=True)
     return Response(serializer.data, status=status.HTTP_200_OK)
 

@@ -6,13 +6,21 @@ from django.shortcuts import get_object_or_404
 from app.models import Membership
 from app.serializers import MembershipSerializer
 from app.views.admin.helpers import is_admin
+from app.views.admin.filter_helpers import apply_text_search
 
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def membership_list_api(request):
     """List all memberships"""
-    memberships = Membership.objects.all().order_by('name')
+    memberships = Membership.objects.all()
+    
+    # Apply search filter
+    search = request.query_params.get('search', '').strip()
+    if search:
+        memberships = apply_text_search(memberships, search, ['name', 'description'])
+    
+    memberships = memberships.order_by('name')
     serializer = MembershipSerializer(memberships, many=True)
     return Response(serializer.data, status=status.HTTP_200_OK)
 

@@ -8,6 +8,9 @@ from decimal import Decimal
 from app.models import LoanInterestPayment, Loan, PaymentStatus
 from app.serializers import LoanInterestPaymentSerializer
 from app.views.admin.helpers import is_admin_board_or_staff, is_member
+from app.views.admin.filter_helpers import (
+    apply_text_search, apply_date_filter, apply_amount_range_filter, parse_date_range
+)
 
 
 @api_view(['GET'])
@@ -25,14 +28,39 @@ def loan_interest_payment_list_api(request):
                 {'error': 'Access denied. You can only view your own loan payments.'},
                 status=status.HTTP_403_FORBIDDEN
             )
-        payments = LoanInterestPayment.objects.filter(loan=loan).select_related('loan').order_by('-paid_date', '-created_at')
+        payments = LoanInterestPayment.objects.filter(loan=loan).select_related('loan')
     elif is_member(request.user):
         # Members can only see payments for their own loans
-        payments = LoanInterestPayment.objects.filter(loan__user=request.user).select_related('loan').order_by('-paid_date', '-created_at')
+        payments = LoanInterestPayment.objects.filter(loan__user=request.user).select_related('loan')
     else:
         # Admin/Board/Staff can see all payments
-        payments = LoanInterestPayment.objects.all().select_related('loan').order_by('-paid_date', '-created_at')
+        payments = LoanInterestPayment.objects.all().select_related('loan')
     
+    # Apply search filter
+    search = request.query_params.get('search', '').strip()
+    if search:
+        payments = apply_text_search(payments, search, ['loan__user__name', 'loan_id'])
+    
+    # Apply status filter
+    status_filter = request.query_params.get('status', '').strip()
+    if status_filter:
+        payments = payments.filter(payment_status=status_filter)
+    
+    # Apply date range filter
+    date_range_str = request.query_params.get('date_range', '').strip()
+    if date_range_str:
+        date_range = parse_date_range(date_range_str)
+        if date_range:
+            start_date, end_date = date_range
+            payments = apply_date_filter(payments, 'paid_date', start_date, end_date)
+    
+    # Apply amount range filter
+    min_amount = request.query_params.get('min_amount', '').strip()
+    max_amount = request.query_params.get('max_amount', '').strip()
+    if min_amount or max_amount:
+        payments = apply_amount_range_filter(payments, 'amount', min_amount, max_amount)
+    
+    payments = payments.order_by('-paid_date', '-created_at')
     serializer = LoanInterestPaymentSerializer(payments, many=True)
     return Response(serializer.data, status=status.HTTP_200_OK)
 

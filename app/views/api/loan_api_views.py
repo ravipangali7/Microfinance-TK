@@ -3,9 +3,13 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
 from django.shortcuts import get_object_or_404
+from decimal import Decimal
 from app.models import Loan, PaymentStatus
 from app.serializers import LoanSerializer
 from app.views.admin.helpers import is_admin_board_or_staff, is_member
+from app.views.admin.filter_helpers import (
+    apply_text_search, apply_date_filter, apply_amount_range_filter, parse_date_range
+)
 
 
 @api_view(['GET'])
@@ -14,11 +18,36 @@ def loan_list_api(request):
     """List loans with role-based filtering"""
     if is_member(request.user):
         # Members can only see their own loans
-        loans = Loan.objects.filter(user=request.user).select_related('user', 'action_by').order_by('-applied_date', '-created_at')
+        loans = Loan.objects.filter(user=request.user).select_related('user', 'action_by')
     else:
         # Admin/Board/Staff can see all loans
-        loans = Loan.objects.all().select_related('user', 'action_by').order_by('-applied_date', '-created_at')
+        loans = Loan.objects.all().select_related('user', 'action_by')
     
+    # Apply search filter
+    search = request.query_params.get('search', '').strip()
+    if search:
+        loans = apply_text_search(loans, search, ['user__name', 'user__phone', 'amount'])
+    
+    # Apply status filter
+    status_filter = request.query_params.get('status', '').strip()
+    if status_filter:
+        loans = loans.filter(status=status_filter)
+    
+    # Apply date range filter
+    date_range_str = request.query_params.get('date_range', '').strip()
+    if date_range_str:
+        date_range = parse_date_range(date_range_str)
+        if date_range:
+            start_date, end_date = date_range
+            loans = apply_date_filter(loans, 'applied_date', start_date, end_date)
+    
+    # Apply amount range filter
+    min_amount = request.query_params.get('min_amount', '').strip()
+    max_amount = request.query_params.get('max_amount', '').strip()
+    if min_amount or max_amount:
+        loans = apply_amount_range_filter(loans, 'amount', min_amount, max_amount)
+    
+    loans = loans.order_by('-applied_date', '-created_at')
     serializer = LoanSerializer(loans, many=True)
     return Response(serializer.data, status=status.HTTP_200_OK)
 

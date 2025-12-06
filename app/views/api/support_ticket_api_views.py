@@ -3,8 +3,11 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
 from django.core.files.storage import default_storage
-from app.models import SupportTicket, SupportTicketReply
+from app.models import SupportTicket, SupportTicketReply, SupportTicketStatus
 from app.serializers import SupportTicketSerializer, SupportTicketReplySerializer
+from app.views.admin.filter_helpers import (
+    apply_text_search, apply_date_filter, parse_date_range
+)
 
 
 @api_view(['GET'])
@@ -12,7 +15,27 @@ from app.serializers import SupportTicketSerializer, SupportTicketReplySerialize
 def support_ticket_list_api(request):
     """API endpoint to list user's support tickets"""
     try:
-        tickets = SupportTicket.objects.filter(user=request.user).order_by('-created_at')
+        tickets = SupportTicket.objects.filter(user=request.user)
+        
+        # Apply search filter
+        search = request.query_params.get('search', '').strip()
+        if search:
+            tickets = apply_text_search(tickets, search, ['subject', 'message', 'user__name'])
+        
+        # Apply status filter
+        status_filter = request.query_params.get('status', '').strip()
+        if status_filter:
+            tickets = tickets.filter(status=status_filter)
+        
+        # Apply date range filter
+        date_range_str = request.query_params.get('date_range', '').strip()
+        if date_range_str:
+            date_range = parse_date_range(date_range_str)
+            if date_range:
+                start_date, end_date = date_range
+                tickets = apply_date_filter(tickets, 'created_at', start_date, end_date)
+        
+        tickets = tickets.order_by('-created_at')
         serializer = SupportTicketSerializer(tickets, many=True, context={'request': request})
         return Response(serializer.data, status=status.HTTP_200_OK)
     except Exception as e:
