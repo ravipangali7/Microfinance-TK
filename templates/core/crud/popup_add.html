@@ -34,11 +34,25 @@
                         <div class="row">
                             <div class="col-md-12 mb-3">
                                 <label class="form-label">Image (Optional)</label>
-                                {{ form.image }}
+                                <!-- Hidden file input -->
+                                <input type="file" id="imageInput" name="image" accept="image/*" style="display: none;">
+                                
+                                <!-- Image preview and controls -->
+                                <div id="imagePreviewContainer" style="display: none;" class="mb-2">
+                                    <img id="imagePreview" src="" alt="Preview" style="max-width: 300px; max-height: 300px; object-fit: contain; border: 1px solid #ddd; border-radius: 4px; padding: 5px;">
+                                    <br>
+                                    <button type="button" class="btn btn-sm btn-secondary mt-2" onclick="clearImage()">Remove Image</button>
+                                </div>
+                                
+                                <!-- Select image button -->
+                                <button type="button" class="btn btn-outline-primary" onclick="document.getElementById('imageInput').click()">
+                                    <i class="align-middle me-1" data-feather="upload"></i> Select Image
+                                </button>
+                                
                                 {% if form.image.errors %}
                                     <div class="text-danger">{{ form.image.errors }}</div>
                                 {% endif %}
-                                <small class="form-text text-muted">Upload an image for the popup (optional)</small>
+                                <small class="form-text text-muted d-block mt-2">Upload an image for the popup (optional). You can crop the image after selection.</small>
                             </div>
                         </div>
                         <div class="row">
@@ -69,5 +83,130 @@
         </div>
     </div>
 </div>
+
+<!-- Image Crop Modal -->
+<div class="modal fade" id="imageCropModal" tabindex="-1" aria-labelledby="imageCropModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="imageCropModalLabel">Crop Image</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div style="max-width: 100%; max-height: 500px; overflow: hidden;">
+                    <img id="cropImage" src="" alt="Crop" style="max-width: 100%; display: block;">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="cropButton">Crop & Use</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<!-- Cropper.js CSS -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css">
+<!-- Cropper.js JS -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
+
+<script>
+let cropper;
+let imageCropModal;
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize modal
+    imageCropModal = new bootstrap.Modal(document.getElementById('imageCropModal'));
+    
+    // Handle file input change
+    document.getElementById('imageInput').addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                const imageUrl = event.target.result;
+                document.getElementById('cropImage').src = imageUrl;
+                
+                // Show modal and initialize cropper
+                imageCropModal.show();
+                
+                // Initialize cropper after modal is shown
+                setTimeout(function() {
+                    const image = document.getElementById('cropImage');
+                    if (cropper) {
+                        cropper.destroy();
+                    }
+                    cropper = new Cropper(image, {
+                        aspectRatio: 16 / 9, // You can adjust this ratio
+                        viewMode: 1,
+                        autoCropArea: 0.8,
+                        responsive: true,
+                        restore: false,
+                        guides: true,
+                        center: true,
+                        highlight: false,
+                        cropBoxMovable: true,
+                        cropBoxResizable: true,
+                        toggleDragModeOnDismiss: false,
+                    });
+                }, 300);
+            };
+            reader.readAsDataURL(file);
+        }
+    });
+    
+    // Handle crop button
+    document.getElementById('cropButton').addEventListener('click', function() {
+        if (cropper) {
+            // Get cropped canvas
+            const canvas = cropper.getCroppedCanvas({
+                width: 1200,
+                height: 675,
+                imageSmoothingEnabled: true,
+                imageSmoothingQuality: 'high',
+            });
+            
+            // Convert canvas to blob
+            canvas.toBlob(function(blob) {
+                // Create a new File from the blob
+                const file = new File([blob], 'cropped-image.jpg', { type: 'image/jpeg' });
+                
+                // Create a new DataTransfer object and add the file
+                const dataTransfer = new DataTransfer();
+                dataTransfer.items.add(file);
+                
+                // Set the file input files
+                document.getElementById('imageInput').files = dataTransfer.files;
+                
+                // Show preview
+                const imageUrl = URL.createObjectURL(blob);
+                document.getElementById('imagePreview').src = imageUrl;
+                document.getElementById('imagePreviewContainer').style.display = 'block';
+                
+                // Destroy cropper and close modal
+                cropper.destroy();
+                cropper = null;
+                imageCropModal.hide();
+            }, 'image/jpeg', 0.9);
+        }
+    });
+    
+    // Clean up cropper when modal is hidden
+    document.getElementById('imageCropModal').addEventListener('hidden.bs.modal', function() {
+        if (cropper) {
+            cropper.destroy();
+            cropper = null;
+        }
+    });
+});
+
+function clearImage() {
+    document.getElementById('imageInput').value = '';
+    document.getElementById('imagePreviewContainer').style.display = 'none';
+    document.getElementById('imagePreview').src = '';
+}
+</script>
 {% endblock %}
 
