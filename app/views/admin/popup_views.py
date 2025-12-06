@@ -32,15 +32,15 @@ def popup_list(request):
     popups = Popup.objects.all()
     
     # Apply filters
-    search = request.GET.get('search', '')
-    date_range_str = request.GET.get('date_range', '')
-    is_active = request.GET.get('is_active', '')
+    search = request.GET.get('search', '').strip()
+    date_range_str = request.GET.get('date_range', '').strip()
+    is_active = request.GET.get('is_active', '').strip()
     
     # Apply text search
     if search:
         popups = apply_text_search(popups, search, ['title', 'description'])
     
-    # Parse date range - only apply if explicitly set by user
+    # Parse date range - only apply if explicitly set by user (not empty/whitespace)
     start_date, end_date = None, None
     if date_range_str:
         date_range = parse_date_range(date_range_str)
@@ -70,7 +70,7 @@ def popup_list(request):
         },
         'filters': {
             'search': search,
-            'date_range': date_range_str,
+            'date_range': date_range_str or '',  # Ensure empty string if None
             'is_active': is_active,
         },
     }
