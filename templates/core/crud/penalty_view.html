@@ -1,0 +1,169 @@
+{% extends 'core/layouts/base.html' %}
+
+{% block content %}
+<div class="container-fluid p-0">
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0">
+                <i class="align-middle me-2" data-feather="gavel"></i>
+                Penalty Details
+            </h1>
+        </div>
+        <div>
+            {% if is_admin_board_or_staff %}
+            <a href="{% url 'penalty_edit' obj.pk %}" class="btn btn-primary">
+                <i class="align-middle me-1" data-feather="edit-2"></i> Edit Penalty
+            </a>
+            {% endif %}
+            <a href="{% url 'penalty_list' %}" class="btn btn-secondary">
+                <i class="align-middle me-1" data-feather="arrow-left"></i> Back to List
+            </a>
+        </div>
+    </div>
+    
+    <!-- Main Information Card -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="align-middle me-2" data-feather="info"></i>
+                        Penalty Information
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <!-- User Information -->
+                        <div class="col-lg-6 mb-4">
+                            <h6 class="text-muted text-uppercase mb-3">
+                                <i class="align-middle me-1" data-feather="user"></i>
+                                User Information
+                            </h6>
+                            <dl class="row mb-0">
+                                <dt class="col-sm-4 mb-2">Name</dt>
+                                <dd class="col-sm-8 mb-2">
+                                    <strong>{{ obj.user.name }}</strong><br>
+                                    <small class="text-muted">
+                                        <i class="align-middle me-1" data-feather="phone"></i> {{ obj.user.phone }}
+                                    </small>
+                                </dd>
+                                <dd class="col-sm-12 mt-2">
+                                    <a href="{% url 'user_view' obj.user.pk %}" class="btn btn-sm btn-outline-primary">
+                                        <i class="align-middle me-1" data-feather="eye"></i> View User Details
+                                    </a>
+                                </dd>
+                            </dl>
+                        </div>
+                        
+                        <!-- Penalty Details -->
+                        <div class="col-lg-6 mb-4">
+                            <h6 class="text-muted text-uppercase mb-3">
+                                <i class="align-middle me-1" data-feather="gavel"></i>
+                                Penalty Details
+                            </h6>
+                            <dl class="row mb-0">
+                                <dt class="col-sm-5 mb-2">Penalty Type</dt>
+                                <dd class="col-sm-7 mb-2">
+                                    {% if obj.penalty_type == 'deposit' %}
+                                        <span class="badge bg-info fs-6">Deposit</span>
+                                    {% else %}
+                                        <span class="badge bg-warning fs-6">Interest</span>
+                                    {% endif %}
+                                </dd>
+                                
+                                <dt class="col-sm-5 mb-2">Base Amount</dt>
+                                <dd class="col-sm-7 mb-2">Rs. {{ obj.base_amount|floatformat:2 }}</dd>
+                                
+                                <dt class="col-sm-5 mb-2">Month Number</dt>
+                                <dd class="col-sm-7 mb-2">{{ obj.month_number }}</dd>
+                                
+                                <dt class="col-sm-5 mb-2">Penalty Amount</dt>
+                                <dd class="col-sm-7 mb-2">
+                                    <span class="fs-4 fw-bold text-danger">Rs. {{ obj.penalty_amount|floatformat:2 }}</span>
+                                </dd>
+                                
+                                <dt class="col-sm-5 mb-2">Payment Status</dt>
+                                <dd class="col-sm-7 mb-2">
+                                    {% if obj.payment_status == 'paid' %}
+                                        <span class="badge bg-success fs-6">
+                                            <i class="align-middle me-1" data-feather="check-circle"></i> Paid
+                                        </span>
+                                    {% else %}
+                                        <span class="badge bg-warning fs-6">
+                                            <i class="align-middle me-1" data-feather="clock"></i> Pending
+                                        </span>
+                                    {% endif %}
+                                </dd>
+                                
+                                <dt class="col-sm-5 mb-2">Due Date</dt>
+                                <dd class="col-sm-7 mb-2">{{ obj.due_date|date:"F d, Y" }}</dd>
+                                
+                                {% if obj.paid_date %}
+                                <dt class="col-sm-5 mb-2">Paid Date</dt>
+                                <dd class="col-sm-7 mb-2">{{ obj.paid_date|date:"F d, Y" }}</dd>
+                                {% endif %}
+                            </dl>
+                        </div>
+                        
+                        <!-- Related Object Information -->
+                        {% if related_object %}
+                        <div class="col-lg-6 mb-4">
+                            <h6 class="text-muted text-uppercase mb-3">
+                                <i class="align-middle me-1" data-feather="link"></i>
+                                Related Object
+                            </h6>
+                            <dl class="row mb-0">
+                                <dt class="col-sm-4 mb-2">Type</dt>
+                                <dd class="col-sm-8 mb-2">{{ obj.related_object_type }}</dd>
+                                
+                                <dt class="col-sm-4 mb-2">ID</dt>
+                                <dd class="col-sm-8 mb-2">{{ obj.related_object_id }}</dd>
+                                
+                                {% if obj.penalty_type == 'deposit' %}
+                                <dd class="col-sm-12 mt-2">
+                                    <a href="{% url 'monthly_membership_deposit_view' related_object.pk %}" class="btn btn-sm btn-outline-info">
+                                        <i class="align-middle me-1" data-feather="eye"></i> View Deposit
+                                    </a>
+                                </dd>
+                                {% elif obj.penalty_type == 'interest' %}
+                                <dd class="col-sm-12 mt-2">
+                                    <a href="{% url 'loan_interest_payment_view' related_object.pk %}" class="btn btn-sm btn-outline-info">
+                                        <i class="align-middle me-1" data-feather="eye"></i> View Interest Payment
+                                    </a>
+                                </dd>
+                                {% endif %}
+                            </dl>
+                        </div>
+                        {% endif %}
+                        
+                        <!-- System Information -->
+                        <div class="col-lg-6 mb-4">
+                            <h6 class="text-muted text-uppercase mb-3">
+                                <i class="align-middle me-1" data-feather="clock"></i>
+                                System Information
+                            </h6>
+                            <dl class="row mb-0">
+                                <dt class="col-sm-4 mb-2">Created At</dt>
+                                <dd class="col-sm-8 mb-2">{{ obj.created_at|date:"F d, Y h:i A" }}</dd>
+                                
+                                <dt class="col-sm-4 mb-2">Updated At</dt>
+                                <dd class="col-sm-8 mb-2">{{ obj.updated_at|date:"F d, Y h:i A" }}</dd>
+                            </dl>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    if (typeof feather !== 'undefined') {
+        feather.replace();
+    }
+</script>
+{% endblock %}
+

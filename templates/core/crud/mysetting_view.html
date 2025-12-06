@@ -85,6 +85,25 @@
                             </dl>
                         </div>
                         
+                        <!-- Penalty Settings -->
+                        <div class="col-lg-6 mb-4">
+                            <h6 class="text-muted text-uppercase mb-3">
+                                <i class="align-middle me-1" data-feather="gavel"></i>
+                                Penalty Settings
+                            </h6>
+                            <dl class="row mb-0">
+                                <dt class="col-sm-6 mb-2">Default Penalty Amount</dt>
+                                <dd class="col-sm-6 mb-2">
+                                    <span class="badge bg-danger fs-6">Rs. {{ obj.default_penalty_amount|floatformat:2 }}</span>
+                                </dd>
+                                
+                                <dt class="col-sm-6 mb-2">Grace Period</dt>
+                                <dd class="col-sm-6 mb-2">
+                                    <span class="badge bg-info fs-6">{{ obj.penalty_grace_period_days }} days</span>
+                                </dd>
+                            </dl>
+                        </div>
+                        
                         <!-- System Information -->
                         <div class="col-lg-6 mb-4">
                             <h6 class="text-muted text-uppercase mb-3">

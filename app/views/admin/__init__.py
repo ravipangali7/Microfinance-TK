@@ -59,6 +59,9 @@ from .support_ticket_views import (
 from .payment_transaction_views import (
     payment_transaction_list, payment_transaction_view
 )
+from .penalty_views import (
+    penalty_list, penalty_view, penalty_edit, penalty_mark_paid, penalty_delete
+)
 from .report_views import (
     membership_deposit_report, loan_report, user_report, main_report, share_report
 )
@@ -85,6 +88,7 @@ __all__ = [
     'support_ticket_list', 'support_ticket_view',
     'support_ticket_update_status', 'support_ticket_add_reply',
     'payment_transaction_list', 'payment_transaction_view',
+    'penalty_list', 'penalty_view', 'penalty_edit', 'penalty_mark_paid', 'penalty_delete',
     'membership_deposit_report', 'loan_report', 'user_report', 'main_report', 'share_report',
 ]
 

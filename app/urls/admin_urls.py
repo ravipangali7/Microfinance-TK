@@ -20,6 +20,7 @@ from app.views.admin import (
     support_ticket_list, support_ticket_view,
     support_ticket_update_status, support_ticket_add_reply,
     payment_transaction_list, payment_transaction_view,
+    penalty_list, penalty_view, penalty_edit, penalty_mark_paid, penalty_delete,
     membership_deposit_report, loan_report, user_report, main_report, share_report,
 )
 
@@ -134,5 +135,12 @@ urlpatterns = [
     path('reports/users/', user_report, name='user_report'),
     path('reports/main/', main_report, name='main_report'),
     path('reports/share/', share_report, name='share_report'),
+    
+    # Penalties
+    path('penalties/', penalty_list, name='penalty_list'),
+    path('penalties/<int:pk>/', penalty_view, name='penalty_view'),
+    path('penalties/<int:pk>/edit/', penalty_edit, name='penalty_edit'),
+    path('penalties/<int:pk>/mark-paid/', penalty_mark_paid, name='penalty_mark_paid'),
+    path('penalties/<int:pk>/delete/', penalty_delete, name='penalty_delete'),
 ]
 

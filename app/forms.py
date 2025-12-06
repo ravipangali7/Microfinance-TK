@@ -5,7 +5,8 @@ from decimal import Decimal
 from .models import (
     User, Membership, MembershipUser, MonthlyMembershipDeposit,
     Loan, LoanInterestPayment, LoanPrinciplePayment, FundManagement, MySetting,
-    UserStatus, LoanStatus, PaymentStatus, WithdrawalStatus, Gender, PushNotification, Popup
+    UserStatus, LoanStatus, PaymentStatus, WithdrawalStatus, Gender, PushNotification, Popup,
+    Penalty, PenaltyType
 )
 
 
@@ -462,6 +463,60 @@ class PopupForm(forms.ModelForm):
             'image': 'Image (Optional)',
             'is_active': 'Is Active',
         }
+
+
+class PenaltyForm(forms.ModelForm):
+    class Meta:
+        model = Penalty
+        fields = ['user', 'penalty_type', 'related_object_id', 'related_object_type', 'base_amount', 
+                  'month_number', 'penalty_amount', 'payment_status', 'due_date', 'paid_date']
+        widgets = {
+            'user': forms.Select(attrs={'class': 'form-select'}),
+            'penalty_type': forms.Select(attrs={'class': 'form-select'}, choices=PenaltyType.choices),
+            'related_object_id': forms.NumberInput(attrs={'class': 'form-control'}),
+            'related_object_type': forms.TextInput(attrs={'class': 'form-control'}),
+            'base_amount': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
+            'month_number': forms.NumberInput(attrs={'class': 'form-control', 'min': 1}),
+            'penalty_amount': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
+            'payment_status': forms.Select(attrs={'class': 'form-select'}, choices=PaymentStatus.choices),
+            'due_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'paid_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+        }
+        labels = {
+            'user': 'User',
+            'penalty_type': 'Penalty Type',
+            'related_object_id': 'Related Object ID',
+            'related_object_type': 'Related Object Type',
+            'base_amount': 'Base Amount',
+            'month_number': 'Month Number',
+            'penalty_amount': 'Penalty Amount',
+            'payment_status': 'Payment Status',
+            'due_date': 'Due Date',
+            'paid_date': 'Paid Date',
+        }
+    
+    def clean(self):
+        cleaned_data = super().clean()
+        penalty_amount = cleaned_data.get('penalty_amount')
+        base_amount = cleaned_data.get('base_amount')
+        month_number = cleaned_data.get('month_number')
+        
+        if penalty_amount is not None and penalty_amount < 0:
+            raise forms.ValidationError({
+                'penalty_amount': 'Penalty amount must be greater than or equal to 0.'
+            })
+        
+        if base_amount is not None and base_amount < 0:
+            raise forms.ValidationError({
+                'base_amount': 'Base amount must be greater than or equal to 0.'
+            })
+        
+        if month_number is not None and month_number < 1:
+            raise forms.ValidationError({
+                'month_number': 'Month number must be greater than or equal to 1.'
+            })
+        
+        return cleaned_data
     
     def clean_title(self):
         title = self.cleaned_data.get('title')

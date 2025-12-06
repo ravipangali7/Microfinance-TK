@@ -58,6 +58,28 @@
                         </div>
                         
                         <hr class="my-4">
+                        <h5 class="mb-3">Penalty Settings</h5>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Default Penalty Amount *</label>
+                                {{ form.default_penalty_amount }}
+                                {% if form.default_penalty_amount.errors %}
+                                    <div class="text-danger">{{ form.default_penalty_amount.errors }}</div>
+                                {% endif %}
+                                <small class="form-text text-muted">Default penalty amount applied per month (compounds x2 each month)</small>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Penalty Grace Period (Days) *</label>
+                                {{ form.penalty_grace_period_days }}
+                                {% if form.penalty_grace_period_days.errors %}
+                                    <div class="text-danger">{{ form.penalty_grace_period_days.errors }}</div>
+                                {% endif %}
+                                <small class="form-text text-muted">Number of days after due date before penalty is applied</small>
+                            </div>
+                        </div>
+                        
+                        <hr class="my-4">
                         <h5 class="mb-3">App Update Settings</h5>
                         
                         <div class="row">

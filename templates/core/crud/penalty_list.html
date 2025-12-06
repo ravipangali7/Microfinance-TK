@@ -1,0 +1,202 @@
+{% extends 'core/crud/base_list.html' %}
+
+{% block page_title %}Penalties{% endblock %}
+
+{% block stats_cards %}
+<div class="row mb-3">
+    <div class="col-md-3">
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-grow-1">
+                        <h6 class="text-muted mb-1">Total Penalties</h6>
+                        <h3 class="mb-0">{{ stats.total }}</h3>
+                    </div>
+                    <div class="text-danger">
+                        <i class="align-middle" data-feather="gavel" style="width: 32px; height: 32px;"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-grow-1">
+                        <h6 class="text-muted mb-1">Total Amount</h6>
+                        <h3 class="mb-0">Rs. {{ stats.total_amount|floatformat:2 }}</h3>
+                    </div>
+                    <div class="text-danger">
+                        <i class="align-middle" data-feather="dollar-sign" style="width: 32px; height: 32px;"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-grow-1">
+                        <h6 class="text-muted mb-1">Pending ({{ stats.pending_count }})</h6>
+                        <h3 class="mb-0">Rs. {{ stats.pending_amount|floatformat:2 }}</h3>
+                    </div>
+                    <div class="text-warning">
+                        <i class="align-middle" data-feather="clock" style="width: 32px; height: 32px;"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-grow-1">
+                        <h6 class="text-muted mb-1">Paid ({{ stats.paid_count }})</h6>
+                        <h3 class="mb-0">Rs. {{ stats.paid_amount|floatformat:2 }}</h3>
+                    </div>
+                    <div class="text-success">
+                        <i class="align-middle" data-feather="check-circle" style="width: 32px; height: 32px;"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block filters %}
+{% if all_users %}
+<div class="col-md-3">
+    <label class="form-label">User</label>
+    <select name="user_id" class="form-select">
+        <option value="">All Users</option>
+        {% for user in all_users %}
+        <option value="{{ user.id }}" {% if filters.user_id == user.id|stringformat:"s" %}selected{% endif %}>{{ user.name }} ({{ user.phone }})</option>
+        {% endfor %}
+    </select>
+</div>
+{% endif %}
+<div class="col-md-3">
+    <label class="form-label">Penalty Type</label>
+    <select name="penalty_type" class="form-select">
+        <option value="">All Types</option>
+        {% for value, label in penalty_types %}
+        <option value="{{ value }}" {% if filters.penalty_type == value %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+    </select>
+</div>
+<div class="col-md-3">
+    <label class="form-label">Payment Status</label>
+    <select name="payment_status" class="form-select">
+        <option value="">All Statuses</option>
+        {% for value, label in payment_statuses %}
+        <option value="{{ value }}" {% if filters.payment_status == value %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+    </select>
+</div>
+<div class="col-md-3">
+    <label class="form-label">Date Range</label>
+    <input type="text" name="date_range" id="date_range" class="form-control" placeholder="Select date range" value="{{ filters.date_range }}">
+</div>
+<div class="col-md-3">
+    <label class="form-label">Min Amount</label>
+    <input type="number" name="min_amount" class="form-control" placeholder="Min amount" value="{{ filters.min_amount }}" step="0.01">
+</div>
+<div class="col-md-3">
+    <label class="form-label">Max Amount</label>
+    <input type="number" name="max_amount" class="form-control" placeholder="Max amount" value="{{ filters.max_amount }}" step="0.01">
+</div>
+{% endblock %}
+
+{% block table_header %}
+<tr>
+    <th>User</th>
+    <th>Type</th>
+    <th>Base Amount</th>
+    <th>Month</th>
+    <th>Penalty Amount</th>
+    <th>Due Date</th>
+    <th>Payment Status</th>
+    <th>Actions</th>
+</tr>
+{% endblock %}
+
+{% block table_body %}
+{% for penalty in penalties %}
+<tr>
+    <td>{{ penalty.user.name }} ({{ penalty.user.phone }})</td>
+    <td>
+        {% if penalty.penalty_type == 'deposit' %}
+            <span class="badge bg-info">Deposit</span>
+        {% else %}
+            <span class="badge bg-warning">Interest</span>
+        {% endif %}
+    </td>
+    <td>Rs. {{ penalty.base_amount|floatformat:2 }}</td>
+    <td>{{ penalty.month_number }}</td>
+    <td><strong>Rs. {{ penalty.penalty_amount|floatformat:2 }}</strong></td>
+    <td>{{ penalty.due_date|date:"M d, Y" }}</td>
+    <td>
+        {% if penalty.payment_status == 'paid' %}
+            <span class="badge bg-success">Paid</span>
+        {% else %}
+            <span class="badge bg-warning">Pending</span>
+        {% endif %}
+    </td>
+    <td>
+        <a href="{% url 'penalty_view' penalty.pk %}" class="btn btn-sm btn-info" title="View">
+            <i class="align-middle" data-feather="eye"></i>
+        </a>
+        {% if is_admin_board_or_staff %}
+        <a href="{% url 'penalty_edit' penalty.pk %}" class="btn btn-sm btn-primary" title="Edit">
+            <i class="align-middle" data-feather="edit"></i>
+        </a>
+        {% if penalty.payment_status == 'pending' %}
+        <button class="btn btn-sm btn-success" onclick="markPaid('{% url 'penalty_mark_paid' penalty.pk %}', '{{ penalty.user.name }} - Rs. {{ penalty.penalty_amount|floatformat:2 }}')" title="Mark as Paid">
+            <i class="align-middle" data-feather="check"></i>
+        </button>
+        {% endif %}
+        <button class="btn btn-sm btn-danger" onclick="deleteItem('{% url 'penalty_delete' penalty.pk %}', '{{ penalty.user.name }} - Rs. {{ penalty.penalty_amount|floatformat:2 }}')" title="Delete">
+            <i class="align-middle" data-feather="trash-2"></i>
+        </button>
+        {% endif %}
+    </td>
+</tr>
+{% empty %}
+<tr>
+    <td colspan="8" class="text-center text-muted">No penalties found</td>
+</tr>
+{% endfor %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function markPaid(url, name) {
+    if (confirm('Mark penalty as paid: ' + name + '?')) {
+        fetch(url, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}',
+                'Content-Type': 'application/json',
+            },
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Error: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred while marking penalty as paid.');
+        });
+    }
+}
+</script>
+{% endblock %}
+
