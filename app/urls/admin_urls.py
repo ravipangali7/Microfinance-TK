@@ -16,6 +16,9 @@ from app.views.admin import (
     board_approval_view, approve_loan, reject_loan, update_loan_status,
     push_notification_list, push_notification_create, push_notification_update,
     push_notification_delete, push_notification_view, send_push_notification_view,
+    popup_list, popup_create, popup_update, popup_delete, popup_view,
+    support_ticket_list, support_ticket_view,
+    support_ticket_update_status, support_ticket_add_reply,
     payment_transaction_list, payment_transaction_view,
     membership_deposit_report, loan_report, user_report, main_report,
 )
@@ -104,6 +107,19 @@ urlpatterns = [
     path('push-notifications/<int:pk>/edit/', push_notification_update, name='push_notification_update'),
     path('push-notifications/<int:pk>/delete/', push_notification_delete, name='push_notification_delete'),
     path('push-notifications/<int:pk>/send/', send_push_notification_view, name='send_push_notification'),
+    
+    # Popup CRUD
+    path('popups/', popup_list, name='popup_list'),
+    path('popups/create/', popup_create, name='popup_create'),
+    path('popups/<int:pk>/', popup_view, name='popup_view'),
+    path('popups/<int:pk>/edit/', popup_update, name='popup_update'),
+    path('popups/<int:pk>/delete/', popup_delete, name='popup_delete'),
+    
+    # Support Ticket
+    path('support-tickets/', support_ticket_list, name='support_ticket_list'),
+    path('support-tickets/<int:pk>/', support_ticket_view, name='support_ticket_view'),
+    path('support-tickets/<int:pk>/update-status/', support_ticket_update_status, name='support_ticket_update_status'),
+    path('support-tickets/<int:pk>/add-reply/', support_ticket_add_reply, name='support_ticket_add_reply'),
     
     # Payment Transaction
     path('payment-transactions/', payment_transaction_list, name='payment_transaction_list'),

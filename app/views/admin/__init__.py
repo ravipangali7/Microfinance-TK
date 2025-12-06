@@ -48,6 +48,13 @@ from .push_notification_views import (
     push_notification_list, push_notification_create, push_notification_update,
     push_notification_delete, push_notification_view, send_push_notification_view
 )
+from .popup_views import (
+    popup_list, popup_create, popup_update, popup_delete, popup_view
+)
+from .support_ticket_views import (
+    support_ticket_list, support_ticket_view,
+    support_ticket_update_status, support_ticket_add_reply
+)
 from .payment_transaction_views import (
     payment_transaction_list, payment_transaction_view
 )
@@ -72,6 +79,9 @@ __all__ = [
     'board_approval_view', 'approve_loan', 'reject_loan', 'update_loan_status',
     'push_notification_list', 'push_notification_create', 'push_notification_update',
     'push_notification_delete', 'push_notification_view', 'send_push_notification_view',
+    'popup_list', 'popup_create', 'popup_update', 'popup_delete', 'popup_view',
+    'support_ticket_list', 'support_ticket_view',
+    'support_ticket_update_status', 'support_ticket_add_reply',
     'payment_transaction_list', 'payment_transaction_view',
     'membership_deposit_report', 'loan_report', 'user_report', 'main_report',
 ]

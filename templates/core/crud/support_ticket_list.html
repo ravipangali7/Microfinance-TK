@@ -1,0 +1,133 @@
+{% extends 'core/crud/base_list.html' %}
+
+{% block page_title %}Support Tickets{% endblock %}
+
+{% block stats_cards %}
+<div class="row mb-3">
+    <div class="col-md-3">
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-grow-1">
+                        <h6 class="text-muted mb-1">Total Tickets</h6>
+                        <h3 class="mb-0">{{ stats.total }}</h3>
+                    </div>
+                    <div class="text-primary">
+                        <i class="align-middle" data-feather="help-circle" style="width: 32px; height: 32px;"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-grow-1">
+                        <h6 class="text-muted mb-1">Pending</h6>
+                        <h3 class="mb-0">{{ stats.pending }}</h3>
+                    </div>
+                    <div class="text-warning">
+                        <i class="align-middle" data-feather="clock" style="width: 32px; height: 32px;"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-grow-1">
+                        <h6 class="text-muted mb-1">Open</h6>
+                        <h3 class="mb-0">{{ stats.open }}</h3>
+                    </div>
+                    <div class="text-info">
+                        <i class="align-middle" data-feather="message-circle" style="width: 32px; height: 32px;"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-grow-1">
+                        <h6 class="text-muted mb-1">Resolved</h6>
+                        <h3 class="mb-0">{{ stats.resolved }}</h3>
+                    </div>
+                    <div class="text-success">
+                        <i class="align-middle" data-feather="check-circle" style="width: 32px; height: 32px;"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block filters %}
+<div class="col-md-3">
+    <label class="form-label">Search</label>
+    <input type="text" name="search" class="form-control" placeholder="Search subject, message, user" value="{{ filters.search }}">
+</div>
+<div class="col-md-3">
+    <label class="form-label">Date Range</label>
+    <input type="text" name="date_range" id="date_range" class="form-control" placeholder="Select date range" value="{{ filters.date_range }}">
+</div>
+<div class="col-md-3">
+    <label class="form-label">Status</label>
+    <select name="status" class="form-select">
+        <option value="">All Statuses</option>
+        {% for value, label in all_statuses %}
+        <option value="{{ value }}" {% if filters.status == value %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+    </select>
+</div>
+{% endblock %}
+
+{% block table_header %}
+<tr>
+    <th>User</th>
+    <th>Subject</th>
+    <th>Message</th>
+    <th>Status</th>
+    <th>Replies</th>
+    <th>Created At</th>
+    <th>Actions</th>
+</tr>
+{% endblock %}
+
+{% block table_body %}
+{% for ticket in tickets %}
+<tr>
+    <td>{{ ticket.user.name }}<br><small class="text-muted">{{ ticket.user.phone }}</small></td>
+    <td>{{ ticket.subject }}</td>
+    <td>{{ ticket.message|truncatewords:10 }}</td>
+    <td>
+        {% if ticket.status == 'pending' %}
+            <span class="badge bg-warning">Pending</span>
+        {% elif ticket.status == 'open' %}
+            <span class="badge bg-info">Open</span>
+        {% elif ticket.status == 'resolved' %}
+            <span class="badge bg-success">Resolved</span>
+        {% elif ticket.status == 'closed' %}
+            <span class="badge bg-secondary">Closed</span>
+        {% endif %}
+    </td>
+    <td>{{ ticket.replies.count }}</td>
+    <td>{{ ticket.created_at|date:"Y-m-d H:i" }}</td>
+    <td>
+        <a href="{% url 'support_ticket_view' ticket.pk %}" class="btn btn-sm btn-info" title="View">
+            <i class="align-middle" data-feather="eye"></i>
+        </a>
+    </td>
+</tr>
+{% empty %}
+<tr>
+    <td colspan="7" class="text-center text-muted">No support tickets found</td>
+</tr>
+{% endfor %}
+{% endblock %}
+

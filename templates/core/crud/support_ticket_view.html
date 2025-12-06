@@ -1,0 +1,234 @@
+{% extends 'core/layouts/base.html' %}
+
+{% block content %}
+<div class="container-fluid p-0">
+    <h1 class="h3 mb-3">Support Ticket Details</h1>
+    
+    <div class="row">
+        <div class="col-md-8">
+            <!-- Ticket Information -->
+            <div class="card mb-3">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Ticket Information</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-md-3"><strong>User:</strong></div>
+                        <div class="col-md-9">{{ ticket.user.name }} ({{ ticket.user.phone }})</div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-3"><strong>Subject:</strong></div>
+                        <div class="col-md-9">{{ ticket.subject }}</div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-3"><strong>Message:</strong></div>
+                        <div class="col-md-9">{{ ticket.message|linebreaks }}</div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-3"><strong>Status:</strong></div>
+                        <div class="col-md-9">
+                            {% if ticket.status == 'pending' %}
+                                <span class="badge bg-warning">Pending</span>
+                            {% elif ticket.status == 'open' %}
+                                <span class="badge bg-info">Open</span>
+                            {% elif ticket.status == 'resolved' %}
+                                <span class="badge bg-success">Resolved</span>
+                            {% elif ticket.status == 'closed' %}
+                                <span class="badge bg-secondary">Closed</span>
+                            {% endif %}
+                            {% if is_admin_or_board %}
+                                <select id="statusSelect" class="form-select form-select-sm d-inline-block ms-2" style="width: auto;">
+                                    {% for value, label in all_statuses %}
+                                    <option value="{{ value }}" {% if ticket.status == value %}selected{% endif %}>{{ label }}</option>
+                                    {% endfor %}
+                                </select>
+                                <button class="btn btn-sm btn-primary ms-2" onclick="updateStatus()">Update Status</button>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-3"><strong>Created At:</strong></div>
+                        <div class="col-md-9">{{ ticket.created_at|date:"Y-m-d H:i:s" }}</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Replies Section -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Replies ({{ replies.count }})</h5>
+                </div>
+                <div class="card-body">
+                    {% for reply in replies %}
+                    <div class="border-bottom pb-3 mb-3">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <div>
+                                <strong>{{ reply.user.name }}</strong>
+                                <small class="text-muted">({{ reply.user.phone }})</small>
+                            </div>
+                            <small class="text-muted">{{ reply.created_at|date:"Y-m-d H:i" }}</small>
+                        </div>
+                        {% if reply.image %}
+                        <div class="mb-2">
+                            <img src="{{ reply.image.url }}" alt="Reply Image" style="max-width: 300px; max-height: 300px; object-fit: cover;" class="img-thumbnail">
+                        </div>
+                        {% endif %}
+                        <div>{{ reply.message|linebreaks }}</div>
+                    </div>
+                    {% empty %}
+                    <p class="text-muted">No replies yet.</p>
+                    {% endfor %}
+                    
+                    <!-- Add Reply Form -->
+                    <div class="mt-4">
+                        <h6>Add Reply</h6>
+                        <form id="replyForm" enctype="multipart/form-data">
+                            {% csrf_token %}
+                            <div class="mb-3">
+                                <label class="form-label">Message</label>
+                                <textarea name="message" id="replyMessage" class="form-control" rows="3" placeholder="Enter your reply..."></textarea>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Image (Optional)</label>
+                                <input type="file" name="image" id="replyImage" class="form-control" accept="image/*">
+                            </div>
+                            <button type="submit" class="btn btn-primary">Send Reply</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="mt-3">
+        <a href="{% url 'support_ticket_list' %}" class="btn btn-secondary">Back to List</a>
+    </div>
+</div>
+
+<script>
+// Helper function to get cookie value
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+// Update ticket status
+function updateStatus() {
+    const status = document.getElementById('statusSelect').value;
+    const ticketId = {{ ticket.pk }};
+    
+    const formData = new FormData();
+    formData.append('status', status);
+    
+    fetch(`/support-tickets/${ticketId}/update-status/`, {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRFToken': getCookie('csrftoken'),
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        credentials: 'same-origin'
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            Swal.fire({
+                icon: 'success',
+                title: 'Success',
+                text: data.message,
+                timer: 2000,
+                showConfirmButton: false
+            });
+            setTimeout(() => {
+                window.location.reload();
+            }, 1000);
+        } else {
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: data.error || 'Failed to update status.'
+            });
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: 'An error occurred while updating the status.'
+        });
+    });
+}
+
+// Handle reply form submission
+document.getElementById('replyForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const ticketId = {{ ticket.pk }};
+    const formData = new FormData(this);
+    
+    Swal.fire({
+        title: 'Sending...',
+        text: 'Please wait while we send your reply.',
+        allowOutsideClick: false,
+        didOpen: () => {
+            Swal.showLoading();
+        }
+    });
+    
+    fetch(`/support-tickets/${ticketId}/add-reply/`, {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRFToken': getCookie('csrftoken'),
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        credentials: 'same-origin'
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            Swal.fire({
+                icon: 'success',
+                title: 'Success',
+                text: data.message,
+                timer: 2000,
+                showConfirmButton: false
+            });
+            // Clear form
+            document.getElementById('replyMessage').value = '';
+            document.getElementById('replyImage').value = '';
+            // Reload page
+            setTimeout(() => {
+                window.location.reload();
+            }, 1000);
+        } else {
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: data.error || 'Failed to send reply.'
+            });
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: 'An error occurred while sending the reply.'
+        });
+    });
+});
+</script>
+{% endblock %}
+

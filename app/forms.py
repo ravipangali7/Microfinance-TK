@@ -5,7 +5,7 @@ from decimal import Decimal
 from .models import (
     User, Membership, MembershipUser, MonthlyMembershipDeposit,
     Loan, LoanInterestPayment, LoanPrinciplePayment, OrganizationalWithdrawal, MySetting,
-    UserStatus, LoanStatus, PaymentStatus, WithdrawalStatus, Gender, PushNotification
+    UserStatus, LoanStatus, PaymentStatus, WithdrawalStatus, Gender, PushNotification, Popup
 )
 
 
@@ -419,3 +419,35 @@ class PushNotificationForm(forms.ModelForm):
         if not body or len(body.strip()) == 0:
             raise forms.ValidationError('Body is required.')
         return body.strip()
+
+
+class PopupForm(forms.ModelForm):
+    class Meta:
+        model = Popup
+        fields = ['title', 'description', 'image', 'is_active']
+        widgets = {
+            'title': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Enter popup title'}),
+            'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 5, 'placeholder': 'Enter popup description'}),
+            'image': forms.FileInput(attrs={'class': 'form-control', 'accept': 'image/*'}),
+            'is_active': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+        }
+        labels = {
+            'title': 'Title',
+            'description': 'Description',
+            'image': 'Image (Optional)',
+            'is_active': 'Is Active',
+        }
+    
+    def clean_title(self):
+        title = self.cleaned_data.get('title')
+        if not title or len(title.strip()) == 0:
+            raise forms.ValidationError('Title is required.')
+        if len(title) > 255:
+            raise forms.ValidationError('Title must be 255 characters or less.')
+        return title.strip()
+    
+    def clean_description(self):
+        description = self.cleaned_data.get('description')
+        if not description or len(description.strip()) == 0:
+            raise forms.ValidationError('Description is required.')
+        return description.strip()

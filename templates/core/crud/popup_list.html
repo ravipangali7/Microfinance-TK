@@ -1,0 +1,133 @@
+{% extends 'core/crud/base_list.html' %}
+
+{% block page_title %}Popups{% endblock %}
+
+{% block add_button %}
+{% if is_admin %}
+<a href="{% url 'popup_create' %}" class="btn btn-primary ms-2">
+    <i class="align-middle" data-feather="plus"></i> Create New Popup
+</a>
+{% endif %}
+{% endblock %}
+
+{% block stats_cards %}
+<div class="row mb-3">
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-grow-1">
+                        <h6 class="text-muted mb-1">Total Popups</h6>
+                        <h3 class="mb-0">{{ stats.total }}</h3>
+                    </div>
+                    <div class="text-primary">
+                        <i class="align-middle" data-feather="image" style="width: 32px; height: 32px;"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-grow-1">
+                        <h6 class="text-muted mb-1">Active</h6>
+                        <h3 class="mb-0">{{ stats.active }}</h3>
+                    </div>
+                    <div class="text-success">
+                        <i class="align-middle" data-feather="check-circle" style="width: 32px; height: 32px;"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-grow-1">
+                        <h6 class="text-muted mb-1">Inactive</h6>
+                        <h3 class="mb-0">{{ stats.inactive }}</h3>
+                    </div>
+                    <div class="text-secondary">
+                        <i class="align-middle" data-feather="x-circle" style="width: 32px; height: 32px;"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block filters %}
+<div class="col-md-3">
+    <label class="form-label">Search</label>
+    <input type="text" name="search" class="form-control" placeholder="Search title or description" value="{{ filters.search }}">
+</div>
+<div class="col-md-3">
+    <label class="form-label">Date Range</label>
+    <input type="text" name="date_range" id="date_range" class="form-control" placeholder="Select date range" value="{{ filters.date_range }}">
+</div>
+<div class="col-md-3">
+    <label class="form-label">Status</label>
+    <select name="is_active" class="form-select">
+        <option value="">All Statuses</option>
+        <option value="true" {% if filters.is_active == 'true' %}selected{% endif %}>Active</option>
+        <option value="false" {% if filters.is_active == 'false' %}selected{% endif %}>Inactive</option>
+    </select>
+</div>
+{% endblock %}
+
+{% block table_header %}
+<tr>
+    <th>Title</th>
+    <th>Description</th>
+    <th>Image</th>
+    <th>Status</th>
+    <th>Created At</th>
+    <th>Actions</th>
+</tr>
+{% endblock %}
+
+{% block table_body %}
+{% for popup in popups %}
+<tr>
+    <td>{{ popup.title }}</td>
+    <td>{{ popup.description|truncatewords:15 }}</td>
+    <td>
+        {% if popup.image %}
+            <img src="{{ popup.image.url }}" alt="Popup Image" style="max-width: 50px; max-height: 50px; object-fit: cover;">
+        {% else %}
+            <span class="text-muted">No image</span>
+        {% endif %}
+    </td>
+    <td>
+        {% if popup.is_active %}
+            <span class="badge bg-success">Active</span>
+        {% else %}
+            <span class="badge bg-secondary">Inactive</span>
+        {% endif %}
+    </td>
+    <td>{{ popup.created_at|date:"Y-m-d H:i" }}</td>
+    <td>
+        <a href="{% url 'popup_view' popup.pk %}" class="btn btn-sm btn-info" title="View">
+            <i class="align-middle" data-feather="eye"></i>
+        </a>
+        {% if is_admin %}
+            <a href="{% url 'popup_update' popup.pk %}" class="btn btn-sm btn-primary" title="Edit">
+                <i class="align-middle" data-feather="edit"></i>
+            </a>
+            <button class="btn btn-sm btn-danger" onclick="deleteItem('{% url 'popup_delete' popup.pk %}', 'Popup: {{ popup.title }}')" title="Delete">
+                <i class="align-middle" data-feather="trash-2"></i>
+            </button>
+        {% endif %}
+    </td>
+</tr>
+{% empty %}
+<tr>
+    <td colspan="6" class="text-center text-muted">No popups found</td>
+</tr>
+{% endfor %}
+{% endblock %}
+

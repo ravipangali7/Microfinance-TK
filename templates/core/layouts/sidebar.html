@@ -82,7 +82,18 @@
                     <i class="align-middle" data-feather="bell"></i> <span class="align-middle">Push Notifications</span>
                 </a>
             </li>
+            <li class="sidebar-item">
+                <a class="sidebar-link" href="{% url 'popup_list' %}">
+                    <i class="align-middle" data-feather="image"></i> <span class="align-middle">Popups</span>
+                </a>
+            </li>
             {% endif %}
+            
+            <li class="sidebar-item">
+                <a class="sidebar-link" href="{% url 'support_ticket_list' %}">
+                    <i class="align-middle" data-feather="help-circle"></i> <span class="align-middle">Support Tickets</span>
+                </a>
+            </li>
 
             <li class="sidebar-header">
                 Reports

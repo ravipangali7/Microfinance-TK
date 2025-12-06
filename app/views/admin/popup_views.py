@@ -1,0 +1,158 @@
+from django.shortcuts import render, get_object_or_404, redirect
+from django.http import JsonResponse
+from django.views.decorators.http import require_http_methods
+from django.contrib.auth.decorators import login_required
+from django.contrib import messages
+from app.models import Popup
+from app.forms import PopupForm
+from .helpers import is_admin, get_role_context
+from .filter_helpers import (
+    get_default_date_range, parse_date_range, format_date_range,
+    apply_date_filter, apply_text_search
+)
+
+
+@login_required
+def popup_list(request):
+    """List all popups"""
+    # Only admin can view popups
+    if not is_admin(request.user):
+        messages.error(request, 'Access denied. Only Admin can view popups.')
+        return redirect('dashboard')
+    
+    popups = Popup.objects.all()
+    
+    # Apply filters
+    search = request.GET.get('search', '')
+    date_range_str = request.GET.get('date_range', '')
+    is_active = request.GET.get('is_active', '')
+    
+    # Apply text search
+    if search:
+        popups = apply_text_search(popups, search, ['title', 'description'])
+    
+    # Parse date range
+    start_date, end_date = None, None
+    if date_range_str:
+        date_range = parse_date_range(date_range_str)
+        if date_range:
+            start_date, end_date = date_range
+    else:
+        # Default to last 1 month
+        start_date, end_date = get_default_date_range()
+        date_range_str = format_date_range(start_date, end_date)
+    
+    # Apply date filter
+    popups = apply_date_filter(popups, 'created_at', start_date, end_date)
+    
+    # Apply is_active filter
+    if is_active == 'true':
+        popups = popups.filter(is_active=True)
+    elif is_active == 'false':
+        popups = popups.filter(is_active=False)
+    
+    # Order by
+    popups = popups.order_by('-created_at')
+    
+    # Calculate stats
+    total_popups = popups.count()
+    active_popups = popups.filter(is_active=True).count()
+    inactive_popups = popups.filter(is_active=False).count()
+    
+    context = {
+        'popups': popups,
+        'stats': {
+            'total': total_popups,
+            'active': active_popups,
+            'inactive': inactive_popups,
+        },
+        'filters': {
+            'search': search,
+            'date_range': date_range_str,
+            'is_active': is_active,
+        },
+    }
+    context.update(get_role_context(request))
+    return render(request, 'core/crud/popup_list.html', context)
+
+
+@login_required
+@require_http_methods(["GET", "POST"])
+def popup_create(request):
+    """Create a new popup"""
+    # Only admin can create popups
+    if not is_admin(request.user):
+        messages.error(request, 'Access denied. Only Admin can create popups.')
+        return redirect('popup_list')
+    
+    if request.method == 'POST':
+        form = PopupForm(request.POST, request.FILES)
+        if form.is_valid():
+            popup = form.save()
+            messages.success(request, 'Popup created successfully.')
+            return redirect('popup_list')
+    else:
+        form = PopupForm()
+    
+    context = {'form': form}
+    context.update(get_role_context(request))
+    return render(request, 'core/crud/popup_add.html', context)
+
+
+@login_required
+@require_http_methods(["GET", "POST"])
+def popup_update(request, pk):
+    """Update a popup"""
+    # Only admin can update popups
+    if not is_admin(request.user):
+        messages.error(request, 'Access denied. Only Admin can update popups.')
+        return redirect('popup_list')
+    
+    popup = get_object_or_404(Popup, pk=pk)
+    
+    if request.method == 'POST':
+        form = PopupForm(request.POST, request.FILES, instance=popup)
+        if form.is_valid():
+            popup = form.save()
+            messages.success(request, 'Popup updated successfully.')
+            return redirect('popup_view', pk=pk)
+    else:
+        form = PopupForm(instance=popup)
+    
+    context = {'form': form, 'popup': popup}
+    context.update(get_role_context(request))
+    return render(request, 'core/crud/popup_edit.html', context)
+
+
+@login_required
+def popup_view(request, pk):
+    """View popup details"""
+    # Only admin can view popups
+    if not is_admin(request.user):
+        messages.error(request, 'Access denied. Only Admin can view popups.')
+        return redirect('popup_list')
+    
+    popup = get_object_or_404(Popup, pk=pk)
+    
+    context = {
+        'popup': popup,
+    }
+    context.update(get_role_context(request))
+    return render(request, 'core/crud/popup_view.html', context)
+
+
+@login_required
+@require_http_methods(["POST"])
+def popup_delete(request, pk):
+    """Delete a popup"""
+    # Only admin can delete popups
+    if not is_admin(request.user):
+        messages.error(request, 'Access denied. Only Admin can delete popups.')
+        return redirect('popup_list')
+    
+    popup = get_object_or_404(Popup, pk=pk)
+    
+    popup.delete()
+    messages.success(request, 'Popup deleted successfully.')
+    return redirect('popup_list')
+
