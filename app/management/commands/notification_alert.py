@@ -1,7 +1,7 @@
 from django.core.management.base import BaseCommand
 from django.utils import timezone
 from app.models import (
-    MonthlyMembershipDeposit, LoanInterestPayment, PaymentStatus
+    MonthlyMembershipDeposit, LoanInterestPayment, PaymentStatus, Penalty
 )
 from app.services.push_notification_service import send_notification_to_user
 import logging
@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 
 
 class Command(BaseCommand):
-    help = 'Sends push notifications to users for pending membership deposits and loan interest payments'
+    help = 'Sends push notifications to users for pending membership deposits, loan interest payments, and penalties'
 
     def add_arguments(self, parser):
         parser.add_argument(
@@ -40,6 +40,11 @@ class Command(BaseCommand):
         self.stdout.write(self.style.SUCCESS('Processing Pending Loan Interest Payments...'))
         interest_stats = self.send_interest_notifications(dry_run)
         
+        # Process penalties
+        self.stdout.write('')
+        self.stdout.write(self.style.SUCCESS('Processing Pending Penalties...'))
+        penalty_stats = self.send_penalty_notifications(dry_run)
+        
         # Summary
         self.stdout.write('')
         self.stdout.write(self.style.SUCCESS('=' * 60))
@@ -56,6 +61,12 @@ class Command(BaseCommand):
         self.stdout.write(f'  Notifications sent: {interest_stats["sent"]}')
         self.stdout.write(f'  Skipped (no FCM token): {interest_stats["skipped"]}')
         self.stdout.write(f'  Failed: {interest_stats["failed"]}')
+        self.stdout.write('')
+        self.stdout.write('Penalties:')
+        self.stdout.write(f'  Total pending: {penalty_stats["total"]}')
+        self.stdout.write(f'  Notifications sent: {penalty_stats["sent"]}')
+        self.stdout.write(f'  Skipped (no FCM token): {penalty_stats["skipped"]}')
+        self.stdout.write(f'  Failed: {penalty_stats["failed"]}')
         self.stdout.write('')
         self.stdout.write(self.style.SUCCESS('=' * 60))
 
@@ -208,6 +219,86 @@ class Command(BaseCommand):
                 except Exception as e:
                     stats['failed'] += 1
                     logger.error(f"Error sending interest notification to {user.name}: {e}")
+                    self.stdout.write(
+                        self.style.ERROR(
+                            f'  ✗ Error: {user.name} - {str(e)}'
+                        )
+                    )
+        
+        return stats
+
+    def send_penalty_notifications(self, dry_run):
+        """Send notifications for pending penalties"""
+        stats = {
+            'total': 0,
+            'sent': 0,
+            'skipped': 0,
+            'failed': 0
+        }
+        
+        # Query all pending penalties with related user
+        pending_penalties = Penalty.objects.filter(
+            payment_status=PaymentStatus.PENDING
+        ).select_related('user')
+        
+        stats['total'] = pending_penalties.count()
+        
+        for penalty in pending_penalties:
+            user = penalty.user
+            
+            # Check if user has FCM token
+            if not user.fcm_token:
+                stats['skipped'] += 1
+                self.stdout.write(
+                    self.style.WARNING(
+                        f'  ⊘ Skipped: {user.name} - No FCM token - '
+                        f'Penalty: Rs. {penalty.penalty_amount} ({penalty.get_penalty_type_display()}) - Month {penalty.month_number}'
+                    )
+                )
+                continue
+            
+            # Format notification message
+            title = "Pending Penalty Payment"
+            penalty_type_display = penalty.get_penalty_type_display()
+            body = (
+                f"You have a pending penalty of Rs. {penalty.penalty_amount} "
+                f"for {penalty_type_display} (Month {penalty.month_number}). "
+                f"Total penalty due: Rs. {penalty.total_penalty} (Due: {penalty.due_date})"
+            )
+            
+            if dry_run:
+                self.stdout.write(
+                    self.style.SUCCESS(
+                        f'  ✓ Would send: {user.name} - {title} - {body}'
+                    )
+                )
+                stats['sent'] += 1
+            else:
+                try:
+                    success = send_notification_to_user(
+                        fcm_token=user.fcm_token,
+                        title=title,
+                        body=body
+                    )
+                    if success:
+                        stats['sent'] += 1
+                        self.stdout.write(
+                            self.style.SUCCESS(
+                                f'  ✓ Sent: {user.name} - Penalty: Rs. {penalty.penalty_amount} '
+                                f'({penalty_type_display}) - Month {penalty.month_number}'
+                            )
+                        )
+                    else:
+                        stats['failed'] += 1
+                        self.stdout.write(
+                            self.style.ERROR(
+                                f'  ✗ Failed: {user.name} - Penalty: Rs. {penalty.penalty_amount} '
+                                f'({penalty_type_display}) - Month {penalty.month_number}'
+                            )
+                        )
+                except Exception as e:
+                    stats['failed'] += 1
+                    logger.error(f"Error sending penalty notification to {user.name}: {e}")
                     self.stdout.write(
                         self.style.ERROR(
                             f'  ✗ Error: {user.name} - {str(e)}'
