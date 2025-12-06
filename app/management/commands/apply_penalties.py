@@ -123,31 +123,38 @@ class Command(BaseCommand):
             # Get existing penalties for this deposit
             existing_penalties = Penalty.objects.filter(
                 penalty_type=PenaltyType.DEPOSIT,
-                related_object_id=deposit.pk
+                related_object_id=deposit.pk,
+                payment_status=PaymentStatus.PENDING
             )
             
+            # Calculate first penalty due date (next day after penalty_start_date)
+            first_penalty_due_date = penalty_start_date + timedelta(days=1)
+            
+            # Get existing penalty dates (year/month combinations) to avoid duplicates
+            existing_dates = set()
             if not force:
-                # Get existing month numbers
-                existing_months = set(existing_penalties.values_list('month_number', flat=True))
-            else:
-                existing_months = set()
+                for penalty in existing_penalties:
+                    existing_dates.add((penalty.due_date.year, penalty.due_date.month))
             
             # Create penalties for missing months
             for month_num in range(1, months_overdue + 1):
-                if month_num in existing_months and not force:
+                # Calculate due date for this penalty (same day, next month)
+                penalty_due_date = first_penalty_due_date + relativedelta(months=month_num - 1)
+                
+                # Check if penalty already exists for this year/month
+                if not force and (penalty_due_date.year, penalty_due_date.month) in existing_dates:
                     continue
                 
                 # Calculate penalty amount for this month
                 penalty_amt = penalty_amount * (Decimal(2) ** (month_num - 1))
                 
-                # Calculate due date for this penalty (first day of the month after due date)
-                penalty_due_date = penalty_start_date + relativedelta(months=month_num - 1)
-                penalty_due_date = penalty_due_date.replace(day=1)
-                
                 if not dry_run:
-                    # Delete existing penalty for this month if force mode
-                    if force and month_num in existing_months:
-                        existing_penalties.filter(month_number=month_num).delete()
+                    # Delete existing penalty for this year/month if force mode
+                    if force and (penalty_due_date.year, penalty_due_date.month) in existing_dates:
+                        existing_penalties.filter(
+                            due_date__year=penalty_due_date.year,
+                            due_date__month=penalty_due_date.month
+                        ).delete()
                     
                     # Create penalty
                     penalty = Penalty.objects.create(
@@ -268,31 +275,38 @@ class Command(BaseCommand):
             # Get existing penalties for this payment
             existing_penalties = Penalty.objects.filter(
                 penalty_type=PenaltyType.INTEREST,
-                related_object_id=payment.pk
+                related_object_id=payment.pk,
+                payment_status=PaymentStatus.PENDING
             )
             
+            # Calculate first penalty due date (next day after penalty_start_date)
+            first_penalty_due_date = penalty_start_date + timedelta(days=1)
+            
+            # Get existing penalty dates (year/month combinations) to avoid duplicates
+            existing_dates = set()
             if not force:
-                # Get existing month numbers
-                existing_months = set(existing_penalties.values_list('month_number', flat=True))
-            else:
-                existing_months = set()
+                for penalty in existing_penalties:
+                    existing_dates.add((penalty.due_date.year, penalty.due_date.month))
             
             # Create penalties for missing months
             for month_num in range(1, months_overdue + 1):
-                if month_num in existing_months and not force:
+                # Calculate due date for this penalty (same day, next month)
+                penalty_due_date = first_penalty_due_date + relativedelta(months=month_num - 1)
+                
+                # Check if penalty already exists for this year/month
+                if not force and (penalty_due_date.year, penalty_due_date.month) in existing_dates:
                     continue
                 
                 # Calculate penalty amount for this month
                 penalty_amt = penalty_amount * (Decimal(2) ** (month_num - 1))
                 
-                # Calculate due date for this penalty
-                penalty_due_date = penalty_start_date + relativedelta(months=month_num - 1)
-                penalty_due_date = penalty_due_date.replace(day=1)
-                
                 if not dry_run:
-                    # Delete existing penalty for this month if force mode
-                    if force and month_num in existing_months:
-                        existing_penalties.filter(month_number=month_num).delete()
+                    # Delete existing penalty for this year/month if force mode
+                    if force and (penalty_due_date.year, penalty_due_date.month) in existing_dates:
+                        existing_penalties.filter(
+                            due_date__year=penalty_due_date.year,
+                            due_date__month=penalty_due_date.month
+                        ).delete()
                     
                     # Create penalty
                     penalty = Penalty.objects.create(
