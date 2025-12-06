@@ -60,7 +60,7 @@ from .payment_transaction_views import (
     payment_transaction_list, payment_transaction_view
 )
 from .report_views import (
-    membership_deposit_report, loan_report, user_report, main_report
+    membership_deposit_report, loan_report, user_report, main_report, share_report
 )
 
 __all__ = [
@@ -85,6 +85,6 @@ __all__ = [
     'support_ticket_list', 'support_ticket_view',
     'support_ticket_update_status', 'support_ticket_add_reply',
     'payment_transaction_list', 'payment_transaction_view',
-    'membership_deposit_report', 'loan_report', 'user_report', 'main_report',
+    'membership_deposit_report', 'loan_report', 'user_report', 'main_report', 'share_report',
 ]
 
