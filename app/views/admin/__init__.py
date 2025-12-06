@@ -42,7 +42,8 @@ from .mysetting_views import (
 )
 from .board_approval_views import (
     board_approval_view, approve_loan, reject_loan,
-    update_loan_status
+    update_loan_status, approve_fund_management, reject_fund_management,
+    update_fund_management_status
 )
 from .push_notification_views import (
     push_notification_list, push_notification_create, push_notification_update,
@@ -77,6 +78,7 @@ __all__ = [
     'fund_management_list', 'fund_management_create', 'fund_management_update', 'fund_management_delete', 'fund_management_view',
     'mysetting_view', 'mysetting_update',
     'board_approval_view', 'approve_loan', 'reject_loan', 'update_loan_status',
+    'approve_fund_management', 'reject_fund_management', 'update_fund_management_status',
     'push_notification_list', 'push_notification_create', 'push_notification_update',
     'push_notification_delete', 'push_notification_view', 'send_push_notification_view',
     'popup_list', 'popup_create', 'popup_update', 'popup_delete', 'popup_view',

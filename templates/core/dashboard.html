@@ -163,7 +163,7 @@
                 <div class="card-body">
                     <div class="row">
                         <div class="col mt-0">
-                            <h5 class="card-title">Pending Withdrawals</h5>
+                            <h5 class="card-title">Pending Fund Management</h5>
                         </div>
                         <div class="col-auto">
                             <div class="stat text-danger">
@@ -171,9 +171,9 @@
                             </div>
                         </div>
                     </div>
-                    <h1 class="mt-1 mb-3">{{ withdrawals_pending }}</h1>
+                    <h1 class="mt-1 mb-3">{{ fund_management_pending }}</h1>
                     <div class="mb-0">
-                        <span class="text-muted">Rs. {{ pending_withdrawals_amount|floatformat:2 }} pending</span>
+                        <span class="text-muted">Rs. {{ pending_fund_management_amount|floatformat:2 }} pending</span>
                     </div>
                 </div>
             </div>
@@ -356,8 +356,8 @@
                     </div>
                     <div class="mb-3">
                         <div class="d-flex justify-content-between">
-                            <span class="text-muted">Organizational Withdrawals</span>
-                            <strong>Rs. {{ total_withdrawals_amount|floatformat:2 }}</strong>
+                            <span class="text-muted">Fund Management</span>
+                            <strong>Rs. {{ total_fund_management_amount|floatformat:2 }}</strong>
                         </div>
                     </div>
                     {% if not is_member %}
@@ -478,7 +478,7 @@
         <div class="col-12 col-lg-6 col-xxl-6 d-flex">
             <div class="card flex-fill">
                 <div class="card-header">
-                    <h5 class="card-title mb-0">Recent Withdrawals</h5>
+                    <h5 class="card-title mb-0">Recent Fund Management</h5>
                 </div>
                 <table class="table table-hover my-0">
                     <thead>
@@ -490,26 +490,33 @@
                         </tr>
                     </thead>
                     <tbody>
-                        {% for withdrawal in recent_withdrawals %}
+                        {% for record in recent_fund_management %}
                         <tr>
-                            <td>{{ withdrawal.purpose|truncatewords:5 }}</td>
-                            <td class="d-none d-xl-table-cell">{{ withdrawal.date }}</td>
-                            <td>Rs. {{ withdrawal.amount|floatformat:2 }}</td>
                             <td>
-                                {% if withdrawal.status == 'pending' %}
+                                {% if record.type == 'credit' %}
+                                    <span class="badge bg-success me-1">Credit</span>
+                                {% else %}
+                                    <span class="badge bg-danger me-1">Debit</span>
+                                {% endif %}
+                                {{ record.purpose|truncatewords:5 }}
+                            </td>
+                            <td class="d-none d-xl-table-cell">{{ record.date }}</td>
+                            <td>Rs. {{ record.amount|floatformat:2 }}</td>
+                            <td>
+                                {% if record.status == 'pending' %}
                                     <span class="badge bg-warning">Pending</span>
-                                {% elif withdrawal.status == 'approved' %}
+                                {% elif record.status == 'approved' %}
                                     <span class="badge bg-success">Approved</span>
-                                {% elif withdrawal.status == 'rejected' %}
+                                {% elif record.status == 'rejected' %}
                                     <span class="badge bg-danger">Rejected</span>
                                 {% else %}
-                                    <span class="badge bg-secondary">{{ withdrawal.status }}</span>
+                                    <span class="badge bg-secondary">{{ record.status }}</span>
                                 {% endif %}
                             </td>
                         </tr>
                         {% empty %}
                         <tr>
-                            <td colspan="4" class="text-center text-muted">No withdrawals yet</td>
+                            <td colspan="4" class="text-center text-muted">No fund management records yet</td>
                         </tr>
                         {% endfor %}
                     </tbody>
@@ -888,16 +895,16 @@ document.addEventListener('DOMContentLoaded', function() {
         select.setAttribute('data-original-value', select.value);
     });
     
-    // Handle withdrawal status dropdown changes
-    const withdrawalStatusSelects = document.querySelectorAll('.withdrawal-status-select');
-    withdrawalStatusSelects.forEach(select => {
+    // Handle fund management status dropdown changes
+    const fundManagementStatusSelects = document.querySelectorAll('.fund-management-status-select');
+    fundManagementStatusSelects.forEach(select => {
         select.addEventListener('change', function() {
-            const withdrawalId = this.getAttribute('data-withdrawal-id');
+            const recordId = this.getAttribute('data-record-id');
             const newStatus = this.value;
             const originalValue = this.getAttribute('data-original-value') || this.value;
             
             // Confirm status change
-            if (!confirm(`Are you sure you want to change the withdrawal status to "${newStatus}"?`)) {
+            if (!confirm(`Are you sure you want to change the fund management status to "${newStatus}"?`)) {
                 this.value = originalValue;
                 return;
             }
@@ -907,7 +914,7 @@ document.addEventListener('DOMContentLoaded', function() {
             formData.append('status', newStatus);
             
             // Send AJAX request
-            fetch(`/organizational-withdrawals/${withdrawalId}/update-status/`, {
+            fetch(`/fund-management/${recordId}/update-status/`, {
                 method: 'POST',
                 body: formData,
                 headers: {
@@ -943,10 +950,10 @@ document.addEventListener('DOMContentLoaded', function() {
                         Swal.fire({
                             icon: 'error',
                             title: 'Error',
-                            text: data.message || 'Failed to update withdrawal status.'
+                            text: data.message || 'Failed to update fund management status.'
                         });
                     } else {
-                        alert(data.message || 'Failed to update withdrawal status.');
+                        alert(data.message || 'Failed to update fund management status.');
                     }
                     // Revert to original value
                     this.value = originalValue;
@@ -958,10 +965,10 @@ document.addEventListener('DOMContentLoaded', function() {
                     Swal.fire({
                         icon: 'error',
                         title: 'Error',
-                        text: 'An error occurred while updating the withdrawal status.'
+                        text: 'An error occurred while updating the fund management status.'
                     });
                 } else {
-                    alert('An error occurred while updating the withdrawal status.');
+                    alert('An error occurred while updating the fund management status.');
                 }
                 // Revert to original value
                 this.value = originalValue;

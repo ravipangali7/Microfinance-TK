@@ -90,5 +90,76 @@
             </div>
         </div>
     </div>
+    
+    <!-- Pending Fund Management Section -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="align-middle me-1" data-feather="dollar-sign"></i>
+                        Pending Fund Management ({{ pending_fund_management.count }})
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if pending_fund_management %}
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Type</th>
+                                        <th>Amount</th>
+                                        <th>Date</th>
+                                        <th>Purpose</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for record in pending_fund_management %}
+                                    <tr>
+                                        <td>#{{ record.id }}</td>
+                                        <td>
+                                            {% if record.type == 'credit' %}
+                                                <span class="badge bg-success">Credit</span>
+                                            {% else %}
+                                                <span class="badge bg-danger">Debit</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>Rs. {{ record.amount|floatformat:2 }}</td>
+                                        <td>{{ record.date }}</td>
+                                        <td>{{ record.purpose|truncatewords:10 }}</td>
+                                        <td>
+                                            <form method="post" action="{% url 'approve_fund_management' record.pk %}" style="display: inline;">
+                                                {% csrf_token %}
+                                                <button type="submit" class="btn btn-sm btn-success" title="Approve">
+                                                    <i class="align-middle" data-feather="check"></i> Approve
+                                                </button>
+                                            </form>
+                                            <form method="post" action="{% url 'reject_fund_management' record.pk %}" style="display: inline;">
+                                                {% csrf_token %}
+                                                <button type="submit" class="btn btn-sm btn-danger" title="Reject" onclick="return confirm('Are you sure you want to reject this fund management record?');">
+                                                    <i class="align-middle" data-feather="x"></i> Reject
+                                                </button>
+                                            </form>
+                                            <a href="{% url 'fund_management_view' record.pk %}" class="btn btn-sm btn-info" title="View Details">
+                                                <i class="align-middle" data-feather="eye"></i>
+                                            </a>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="alert alert-info">
+                            <i class="align-middle me-1" data-feather="info"></i>
+                            No pending fund management records at this time.
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 {% endblock %}

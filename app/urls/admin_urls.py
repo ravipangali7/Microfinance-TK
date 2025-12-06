@@ -13,7 +13,7 @@ from app.views.admin import (
     loan_principle_payment_list, loan_principle_payment_create, loan_principle_payment_update, loan_principle_payment_delete, loan_principle_payment_view,
     fund_management_list, fund_management_create, fund_management_update, fund_management_delete, fund_management_view,
     mysetting_view, mysetting_update,
-    board_approval_view, approve_loan, reject_loan, update_loan_status,
+    board_approval_view, approve_loan, reject_loan, update_loan_status, approve_fund_management, reject_fund_management, update_fund_management_status,
     push_notification_list, push_notification_create, push_notification_update,
     push_notification_delete, push_notification_view, send_push_notification_view,
     popup_list, popup_create, popup_update, popup_delete, popup_view,
@@ -99,6 +99,9 @@ urlpatterns = [
     path('board-approval/', board_approval_view, name='board_approval'),
     path('board-approval/loans/<int:pk>/approve/', approve_loan, name='approve_loan'),
     path('board-approval/loans/<int:pk>/reject/', reject_loan, name='reject_loan'),
+    path('board-approval/fund-management/<int:pk>/approve/', approve_fund_management, name='approve_fund_management'),
+    path('board-approval/fund-management/<int:pk>/reject/', reject_fund_management, name='reject_fund_management'),
+    path('fund-management/<int:pk>/update-status/', update_fund_management_status, name='update_fund_management_status'),
     
     # Push Notification CRUD
     path('push-notifications/', push_notification_list, name='push_notification_list'),
