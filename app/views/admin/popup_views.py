@@ -20,6 +20,15 @@ def popup_list(request):
         messages.error(request, 'Access denied. Only Admin can view popups.')
         return redirect('dashboard')
     
+    # Get all popups for stats calculation (unfiltered)
+    all_popups = Popup.objects.all()
+    
+    # Calculate stats from ALL popups (not filtered)
+    total_popups = all_popups.count()
+    active_popups = all_popups.filter(is_active=True).count()
+    inactive_popups = all_popups.filter(is_active=False).count()
+    
+    # Start with all popups for filtering
     popups = Popup.objects.all()
     
     # Apply filters
@@ -42,8 +51,11 @@ def popup_list(request):
         start_date, end_date = get_default_date_range()
         date_range_str = format_date_range(start_date, end_date)
     
-    # Apply date filter
-    popups = apply_date_filter(popups, 'created_at', start_date, end_date)
+    # Apply date filter - use __date lookup to compare only date part (includes full day)
+    if start_date:
+        popups = popups.filter(created_at__date__gte=start_date)
+    if end_date:
+        popups = popups.filter(created_at__date__lte=end_date)
     
     # Apply is_active filter
     if is_active == 'true':
@@ -53,11 +65,6 @@ def popup_list(request):
     
     # Order by
     popups = popups.order_by('-created_at')
-    
-    # Calculate stats
-    total_popups = popups.count()
-    active_popups = popups.filter(is_active=True).count()
-    inactive_popups = popups.filter(is_active=False).count()
     
     context = {
         'popups': popups,
@@ -90,6 +97,7 @@ def popup_create(request):
         if form.is_valid():
             popup = form.save()
             messages.success(request, 'Popup created successfully.')
+            # Redirect without filters so the new popup is visible
             return redirect('popup_list')
     else:
         form = PopupForm()
