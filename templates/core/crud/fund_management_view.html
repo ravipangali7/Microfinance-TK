@@ -1,0 +1,128 @@
+{% extends 'core/layouts/base.html' %}
+
+{% block content %}
+<div class="container-fluid p-0">
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0">
+                <i class="align-middle me-2" data-feather="{% if obj.type == 'credit' %}trending-up{% else %}trending-down{% endif %}"></i>
+                Fund Management Details
+            </h1>
+        </div>
+        <div>
+            {% if is_admin_or_board %}
+            <a href="{% url 'fund_management_update' obj.pk %}" class="btn btn-primary">
+                <i class="align-middle me-1" data-feather="edit-2"></i> Edit Transaction
+            </a>
+            {% endif %}
+            <a href="{% url 'fund_management_list' %}" class="btn btn-secondary">
+                <i class="align-middle me-1" data-feather="arrow-left"></i> Back to List
+            </a>
+        </div>
+    </div>
+    
+    <!-- Main Information Card -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="align-middle me-2" data-feather="info"></i>
+                        Transaction Information
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <!-- Financial Details -->
+                        <div class="col-lg-6 mb-4">
+                            <h6 class="text-muted text-uppercase mb-3">
+                                <i class="align-middle me-1" data-feather="dollar-sign"></i>
+                                Financial Details
+                            </h6>
+                            <dl class="row mb-0">
+                                <dt class="col-sm-4 mb-2">Type</dt>
+                                <dd class="col-sm-8 mb-2">
+                                    {% if obj.type == 'credit' %}
+                                        <span class="badge bg-success fs-6">
+                                            <i class="align-middle me-1" data-feather="trending-up"></i> Credit
+                                        </span>
+                                    {% else %}
+                                        <span class="badge bg-danger fs-6">
+                                            <i class="align-middle me-1" data-feather="trending-down"></i> Debit
+                                        </span>
+                                    {% endif %}
+                                </dd>
+                                
+                                <dt class="col-sm-4 mb-2">Amount</dt>
+                                <dd class="col-sm-8 mb-2">
+                                    <span class="fs-4 fw-bold {% if obj.type == 'credit' %}text-success{% else %}text-danger{% endif %}">
+                                        {% if obj.type == 'credit' %}+{% else %}-{% endif %}Rs. {{ obj.amount|floatformat:2 }}
+                                    </span>
+                                </dd>
+                                
+                                <dt class="col-sm-4 mb-2">Status</dt>
+                                <dd class="col-sm-8 mb-2">
+                                    {% if obj.status == 'approved' %}
+                                        <span class="badge bg-success fs-6">
+                                            <i class="align-middle me-1" data-feather="check-circle"></i> Approved
+                                        </span>
+                                    {% elif obj.status == 'rejected' %}
+                                        <span class="badge bg-danger fs-6">
+                                            <i class="align-middle me-1" data-feather="x-circle"></i> Rejected
+                                        </span>
+                                    {% else %}
+                                        <span class="badge bg-warning fs-6">
+                                            <i class="align-middle me-1" data-feather="clock"></i> Pending
+                                        </span>
+                                    {% endif %}
+                                </dd>
+                                
+                                <dt class="col-sm-4 mb-2">
+                                    <i class="align-middle me-1" data-feather="calendar"></i> Date
+                                </dt>
+                                <dd class="col-sm-8 mb-2">{{ obj.date|date:"F d, Y" }}</dd>
+                            </dl>
+                        </div>
+                        
+                        <!-- Purpose -->
+                        <div class="col-lg-6 mb-4">
+                            <h6 class="text-muted text-uppercase mb-3">
+                                <i class="align-middle me-1" data-feather="file-text"></i>
+                                Purpose
+                            </h6>
+                            <div class="p-3 bg-light rounded">
+                                <p class="mb-0">{{ obj.purpose|linebreaks }}</p>
+                            </div>
+                        </div>
+                        
+                        <!-- System Information -->
+                        <div class="col-lg-6 mb-4">
+                            <h6 class="text-muted text-uppercase mb-3">
+                                <i class="align-middle me-1" data-feather="clock"></i>
+                                System Information
+                            </h6>
+                            <dl class="row mb-0">
+                                <dt class="col-sm-4 mb-2">Created At</dt>
+                                <dd class="col-sm-8 mb-2">{{ obj.created_at|date:"F d, Y h:i A" }}</dd>
+                                
+                                <dt class="col-sm-4 mb-2">Updated At</dt>
+                                <dd class="col-sm-8 mb-2">{{ obj.updated_at|date:"F d, Y h:i A" }}</dd>
+                            </dl>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    if (typeof feather !== 'undefined') {
+        feather.replace();
+    }
+</script>
+{% endblock %}
+

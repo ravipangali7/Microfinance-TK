@@ -2,7 +2,7 @@ from rest_framework import serializers
 from django.contrib.auth import authenticate
 from .models import (
     User, Membership, MembershipUser, MonthlyMembershipDeposit,
-    Loan, LoanInterestPayment, LoanPrinciplePayment, OrganizationalWithdrawal, MySetting,
+    Loan, LoanInterestPayment, LoanPrinciplePayment, FundManagement, MySetting,
     PaymentTransaction, PushNotification, Popup, SupportTicket, SupportTicketReply
 )
 
@@ -253,11 +253,11 @@ class LoanSerializer(serializers.ModelSerializer):
         return float(obj.get_remaining_principle())
 
 
-class OrganizationalWithdrawalSerializer(serializers.ModelSerializer):
+class FundManagementSerializer(serializers.ModelSerializer):
     class Meta:
-        model = OrganizationalWithdrawal
+        model = FundManagement
         fields = [
-            'id', 'amount', 'date', 'status', 'purpose',
+            'id', 'type', 'amount', 'date', 'status', 'purpose',
             'created_at', 'updated_at'
         ]
         read_only_fields = ['id', 'created_at', 'updated_at']

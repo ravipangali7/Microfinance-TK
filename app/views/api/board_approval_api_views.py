@@ -4,15 +4,15 @@ from rest_framework.response import Response
 from rest_framework import status
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
-from app.models import Loan, OrganizationalWithdrawal, LoanStatus, WithdrawalStatus
-from app.serializers import LoanSerializer, OrganizationalWithdrawalSerializer
+from app.models import Loan, FundManagement, LoanStatus, WithdrawalStatus
+from app.serializers import LoanSerializer, FundManagementSerializer
 from app.views.admin.helpers import is_admin_or_board
 
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def board_approval_list_api(request):
-    """Get pending loans and withdrawals for board approval"""
+    """Get pending loans and fund management records for board approval"""
     # Only Admin and Board can access
     if not is_admin_or_board(request.user):
         return Response(
@@ -24,13 +24,13 @@ def board_approval_list_api(request):
     pending_loans = Loan.objects.filter(status=LoanStatus.PENDING).select_related('user').order_by('-applied_date', '-created_at')
     loans_serializer = LoanSerializer(pending_loans, many=True)
     
-    # Get pending withdrawals
-    pending_withdrawals = OrganizationalWithdrawal.objects.filter(status=WithdrawalStatus.PENDING).order_by('-date', '-created_at')
-    withdrawals_serializer = OrganizationalWithdrawalSerializer(pending_withdrawals, many=True)
+    # Get pending fund management records
+    pending_fund_management = FundManagement.objects.filter(status=WithdrawalStatus.PENDING).order_by('-date', '-created_at')
+    fund_management_serializer = FundManagementSerializer(pending_fund_management, many=True)
     
     return Response({
         'pending_loans': loans_serializer.data,
-        'pending_withdrawals': withdrawals_serializer.data,
+        'pending_fund_management': fund_management_serializer.data,
     }, status=status.HTTP_200_OK)
 
 
@@ -121,42 +121,42 @@ def update_loan_status_api(request, pk):
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
-def approve_withdrawal_api(request, pk):
-    """Approve an organizational withdrawal"""
+def approve_fund_management_api(request, pk):
+    """Approve a fund management record"""
     if not is_admin_or_board(request.user):
         return Response(
-            {'error': 'Access denied. Only Admin and Board members can approve withdrawals.'},
+            {'error': 'Access denied. Only Admin and Board members can approve fund management records.'},
             status=status.HTTP_403_FORBIDDEN
         )
     
-    withdrawal = get_object_or_404(OrganizationalWithdrawal, pk=pk, status=WithdrawalStatus.PENDING)
-    withdrawal.status = WithdrawalStatus.APPROVED
-    withdrawal.save()
+    fund_management = get_object_or_404(FundManagement, pk=pk, status=WithdrawalStatus.PENDING)
+    fund_management.status = WithdrawalStatus.APPROVED
+    fund_management.save()
     
-    serializer = OrganizationalWithdrawalSerializer(withdrawal)
+    serializer = FundManagementSerializer(fund_management)
     return Response({
-        'message': f'Withdrawal #{withdrawal.id} has been approved successfully.',
-        'withdrawal': serializer.data
+        'message': f'Fund Management #{fund_management.id} has been approved successfully.',
+        'fund_management': serializer.data
     }, status=status.HTTP_200_OK)
 
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
-def reject_withdrawal_api(request, pk):
-    """Reject an organizational withdrawal"""
+def reject_fund_management_api(request, pk):
+    """Reject a fund management record"""
     if not is_admin_or_board(request.user):
         return Response(
-            {'error': 'Access denied. Only Admin and Board members can reject withdrawals.'},
+            {'error': 'Access denied. Only Admin and Board members can reject fund management records.'},
             status=status.HTTP_403_FORBIDDEN
         )
     
-    withdrawal = get_object_or_404(OrganizationalWithdrawal, pk=pk, status=WithdrawalStatus.PENDING)
-    withdrawal.status = WithdrawalStatus.REJECTED
-    withdrawal.save()
+    fund_management = get_object_or_404(FundManagement, pk=pk, status=WithdrawalStatus.PENDING)
+    fund_management.status = WithdrawalStatus.REJECTED
+    fund_management.save()
     
-    serializer = OrganizationalWithdrawalSerializer(withdrawal)
+    serializer = FundManagementSerializer(fund_management)
     return Response({
-        'message': f'Withdrawal #{withdrawal.id} has been rejected.',
-        'withdrawal': serializer.data
+        'message': f'Fund Management #{fund_management.id} has been rejected.',
+        'fund_management': serializer.data
     }, status=status.HTTP_200_OK)
 

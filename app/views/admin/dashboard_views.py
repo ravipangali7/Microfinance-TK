@@ -9,7 +9,7 @@ import json
 from app.models import (
     User, Membership, MembershipUser, MonthlyMembershipDeposit,
     Loan, LoanInterestPayment, LoanPrinciplePayment, PaymentTransaction,
-    OrganizationalWithdrawal, MySetting,
+    FundManagement, MySetting,
     UserStatus, LoanStatus, PaymentStatus, WithdrawalStatus
 )
 from .helpers import is_member, get_role_context
@@ -31,7 +31,7 @@ def dashboard_view(request):
     user_queryset = User.objects.all()
     membership_deposit_queryset = MonthlyMembershipDeposit.objects.all()
     loan_queryset = Loan.objects.all()
-    withdrawal_queryset = OrganizationalWithdrawal.objects.all()
+    fund_management_queryset = FundManagement.objects.all()
     interest_payment_queryset = LoanInterestPayment.objects.all()
     principle_payment_queryset = LoanPrinciplePayment.objects.all()
     payment_transaction_queryset = PaymentTransaction.objects.all()
@@ -105,18 +105,18 @@ def dashboard_view(request):
     recent_loans = loan_queryset.select_related('user').order_by('-applied_date', '-created_at')[:10]
     
     # Organizational Withdrawal Statistics
-    total_withdrawals = withdrawal_queryset.count()
-    withdrawals_pending = withdrawal_queryset.filter(status=WithdrawalStatus.PENDING).count()
-    withdrawals_approved = withdrawal_queryset.filter(status=WithdrawalStatus.APPROVED).count()
-    withdrawals_rejected = withdrawal_queryset.filter(status=WithdrawalStatus.REJECTED).count()
-    total_withdrawals_amount = withdrawal_queryset.filter(status=WithdrawalStatus.APPROVED).aggregate(
+    total_fund_management = fund_management_queryset.count()
+    fund_management_pending = fund_management_queryset.filter(status=WithdrawalStatus.PENDING).count()
+    fund_management_approved = fund_management_queryset.filter(status=WithdrawalStatus.APPROVED).count()
+    fund_management_rejected = fund_management_queryset.filter(status=WithdrawalStatus.REJECTED).count()
+    total_fund_management_amount = fund_management_queryset.filter(status=WithdrawalStatus.APPROVED).aggregate(
         total=Sum('amount')
     )['total'] or Decimal('0.00')
-    pending_withdrawals_amount = withdrawal_queryset.filter(status=WithdrawalStatus.PENDING).aggregate(
+    pending_fund_management_amount = fund_management_queryset.filter(status=WithdrawalStatus.PENDING).aggregate(
         total=Sum('amount')
     )['total'] or Decimal('0.00')
     
-    recent_withdrawals = withdrawal_queryset.order_by('-date', '-created_at')[:10]
+    recent_fund_management = fund_management_queryset.order_by('-date', '-created_at')[:10]
     
     # Interest Payment Statistics
     total_interest_payments = interest_payment_queryset.count()
@@ -266,14 +266,14 @@ def dashboard_view(request):
         'recent_loans': recent_loans,
         'loan_status_data': loan_status_data,
         
-        # Withdrawal Statistics
-        'total_withdrawals': total_withdrawals,
-        'withdrawals_pending': withdrawals_pending,
-        'withdrawals_approved': withdrawals_approved,
-        'withdrawals_rejected': withdrawals_rejected,
-        'total_withdrawals_amount': total_withdrawals_amount,
-        'pending_withdrawals_amount': pending_withdrawals_amount,
-        'recent_withdrawals': recent_withdrawals,
+        # Fund Management Statistics
+        'total_fund_management': total_fund_management,
+        'fund_management_pending': fund_management_pending,
+        'fund_management_approved': fund_management_approved,
+        'fund_management_rejected': fund_management_rejected,
+        'total_fund_management_amount': total_fund_management_amount,
+        'pending_fund_management_amount': pending_fund_management_amount,
+        'recent_fund_management': recent_fund_management,
         
         # Interest Payment Statistics
         'total_interest_payments': total_interest_payments,

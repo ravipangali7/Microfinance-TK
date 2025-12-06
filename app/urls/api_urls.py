@@ -16,14 +16,14 @@ from app.views.api import (
     loan_interest_payment_list_api, loan_interest_payment_create_api, loan_interest_payment_detail_api, loan_interest_payment_update_api, loan_interest_payment_delete_api,
     # Loan Principle Payments
     loan_principle_payment_list_api, loan_principle_payment_create_api, loan_principle_payment_detail_api, loan_principle_payment_update_api, loan_principle_payment_delete_api,
-    # Organizational Withdrawals
-    organizational_withdrawal_list_api, organizational_withdrawal_create_api, organizational_withdrawal_detail_api, organizational_withdrawal_update_api, organizational_withdrawal_delete_api,
+    # Fund Management
+    fund_management_list_api, fund_management_create_api, fund_management_detail_api, fund_management_update_api, fund_management_delete_api,
     # Settings
     mysetting_detail_api, mysetting_update_api, loan_settings_api,
     # Dashboard
     dashboard_api,
     # Board Approval
-    board_approval_list_api, approve_loan_api, reject_loan_api, update_loan_status_api, approve_withdrawal_api, reject_withdrawal_api,
+    board_approval_list_api, approve_loan_api, reject_loan_api, update_loan_status_api, approve_fund_management_api, reject_fund_management_api,
     # Payment Check
     payment_check_api,
     # Payment Gateway
@@ -100,12 +100,12 @@ urlpatterns = [
     path('loan-principle-payments/<int:pk>/update/', loan_principle_payment_update_api, name='api_loan_principle_payment_update'),
     path('loan-principle-payments/<int:pk>/delete/', loan_principle_payment_delete_api, name='api_loan_principle_payment_delete'),
     
-    # Organizational Withdrawals
-    path('organizational-withdrawals/', organizational_withdrawal_list_api, name='api_organizational_withdrawal_list'),
-    path('organizational-withdrawals/create/', organizational_withdrawal_create_api, name='api_organizational_withdrawal_create'),
-    path('organizational-withdrawals/<int:pk>/', organizational_withdrawal_detail_api, name='api_organizational_withdrawal_detail'),
-    path('organizational-withdrawals/<int:pk>/update/', organizational_withdrawal_update_api, name='api_organizational_withdrawal_update'),
-    path('organizational-withdrawals/<int:pk>/delete/', organizational_withdrawal_delete_api, name='api_organizational_withdrawal_delete'),
+    # Fund Management
+    path('fund-management/', fund_management_list_api, name='api_fund_management_list'),
+    path('fund-management/create/', fund_management_create_api, name='api_fund_management_create'),
+    path('fund-management/<int:pk>/', fund_management_detail_api, name='api_fund_management_detail'),
+    path('fund-management/<int:pk>/update/', fund_management_update_api, name='api_fund_management_update'),
+    path('fund-management/<int:pk>/delete/', fund_management_delete_api, name='api_fund_management_delete'),
     
     # Settings
     path('settings/', mysetting_detail_api, name='api_mysetting_detail'),
@@ -120,8 +120,8 @@ urlpatterns = [
     path('board-approval/loans/<int:pk>/approve/', approve_loan_api, name='api_approve_loan'),
     path('board-approval/loans/<int:pk>/reject/', reject_loan_api, name='api_reject_loan'),
     path('board-approval/loans/<int:pk>/update-status/', update_loan_status_api, name='api_update_loan_status'),
-    path('board-approval/withdrawals/<int:pk>/approve/', approve_withdrawal_api, name='api_approve_withdrawal'),
-    path('board-approval/withdrawals/<int:pk>/reject/', reject_withdrawal_api, name='api_reject_withdrawal'),
+    path('board-approval/fund-management/<int:pk>/approve/', approve_fund_management_api, name='api_approve_fund_management'),
+    path('board-approval/fund-management/<int:pk>/reject/', reject_fund_management_api, name='api_reject_fund_management'),
     
     # Payment Check
     path('payment-check/', payment_check_api, name='api_payment_check'),

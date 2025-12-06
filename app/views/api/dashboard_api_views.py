@@ -8,13 +8,13 @@ from datetime import timedelta
 from decimal import Decimal
 from app.models import (
     User, Membership, MembershipUser, MonthlyMembershipDeposit,
-    Loan, LoanInterestPayment, OrganizationalWithdrawal, MySetting,
+    Loan, LoanInterestPayment, FundManagement, MySetting,
     UserStatus, LoanStatus, PaymentStatus, WithdrawalStatus
 )
 from app.views.admin.helpers import is_member
 from app.serializers import (
     UserSerializer, MonthlyMembershipDepositSerializer,
-    LoanSerializer, OrganizationalWithdrawalSerializer,
+    LoanSerializer, FundManagementSerializer,
     LoanInterestPaymentSerializer
 )
 
@@ -36,7 +36,7 @@ def dashboard_api(request):
     user_queryset = User.objects.all()
     membership_deposit_queryset = MonthlyMembershipDeposit.objects.all()
     loan_queryset = Loan.objects.all()
-    withdrawal_queryset = OrganizationalWithdrawal.objects.all()
+    fund_management_queryset = FundManagement.objects.all()
     interest_payment_queryset = LoanInterestPayment.objects.all()
     
     # Get total users count (all users including all roles) - needed for My Share calculation
@@ -110,19 +110,19 @@ def dashboard_api(request):
     
     recent_loans = loan_queryset.select_related('user').order_by('-applied_date', '-created_at')[:10]
     
-    # Organizational Withdrawal Statistics
-    total_withdrawals = withdrawal_queryset.count()
-    withdrawals_pending = withdrawal_queryset.filter(status=WithdrawalStatus.PENDING).count()
-    withdrawals_approved = withdrawal_queryset.filter(status=WithdrawalStatus.APPROVED).count()
-    withdrawals_rejected = withdrawal_queryset.filter(status=WithdrawalStatus.REJECTED).count()
-    total_withdrawals_amount = withdrawal_queryset.filter(status=WithdrawalStatus.APPROVED).aggregate(
+    # Fund Management Statistics
+    total_fund_management = fund_management_queryset.count()
+    fund_management_pending = fund_management_queryset.filter(status=WithdrawalStatus.PENDING).count()
+    fund_management_approved = fund_management_queryset.filter(status=WithdrawalStatus.APPROVED).count()
+    fund_management_rejected = fund_management_queryset.filter(status=WithdrawalStatus.REJECTED).count()
+    total_fund_management_amount = fund_management_queryset.filter(status=WithdrawalStatus.APPROVED).aggregate(
         total=Sum('amount')
     )['total'] or Decimal('0.00')
-    pending_withdrawals_amount = withdrawal_queryset.filter(status=WithdrawalStatus.PENDING).aggregate(
+    pending_fund_management_amount = fund_management_queryset.filter(status=WithdrawalStatus.PENDING).aggregate(
         total=Sum('amount')
     )['total'] or Decimal('0.00')
     
-    recent_withdrawals = withdrawal_queryset.order_by('-date', '-created_at')[:10]
+    recent_fund_management = fund_management_queryset.order_by('-date', '-created_at')[:10]
     
     # Interest Payment Statistics
     total_interest_payments = interest_payment_queryset.count()
@@ -193,7 +193,7 @@ def dashboard_api(request):
     # Serialize recent items
     recent_deposits_serialized = MonthlyMembershipDepositSerializer(recent_deposits, many=True).data
     recent_loans_serialized = LoanSerializer(recent_loans, many=True).data
-    recent_withdrawals_serialized = OrganizationalWithdrawalSerializer(recent_withdrawals, many=True).data
+    recent_fund_management_serialized = FundManagementSerializer(recent_fund_management, many=True).data
     recent_interest_payments_serialized = LoanInterestPaymentSerializer(recent_interest_payments, many=True).data
     
     data = {
@@ -228,14 +228,14 @@ def dashboard_api(request):
         'recent_loans': recent_loans_serialized,
         'loan_status_data': loan_status_data,
         
-        # Organizational Withdrawal Statistics
-        'total_withdrawals': total_withdrawals,
-        'withdrawals_pending': withdrawals_pending,
-        'withdrawals_approved': withdrawals_approved,
-        'withdrawals_rejected': withdrawals_rejected,
-        'total_withdrawals_amount': str(total_withdrawals_amount),
-        'pending_withdrawals_amount': str(pending_withdrawals_amount),
-        'recent_withdrawals': recent_withdrawals_serialized,
+        # Fund Management Statistics
+        'total_fund_management': total_fund_management,
+        'fund_management_pending': fund_management_pending,
+        'fund_management_approved': fund_management_approved,
+        'fund_management_rejected': fund_management_rejected,
+        'total_fund_management_amount': str(total_fund_management_amount),
+        'pending_fund_management_amount': str(pending_fund_management_amount),
+        'recent_fund_management': recent_fund_management_serialized,
         
         # Interest Payment Statistics
         'total_interest_payments': total_interest_payments,

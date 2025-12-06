@@ -33,9 +33,9 @@ from .loan_principle_payment_views import (
     loan_principle_payment_view
 )
 from .organizational_withdrawal_views import (
-    organizational_withdrawal_list, organizational_withdrawal_create,
-    organizational_withdrawal_update, organizational_withdrawal_delete,
-    organizational_withdrawal_view
+    fund_management_list, fund_management_create,
+    fund_management_update, fund_management_delete,
+    fund_management_view
 )
 from .mysetting_views import (
     mysetting_view, mysetting_update
@@ -74,7 +74,7 @@ __all__ = [
     'loan_list', 'loan_create', 'loan_update', 'loan_delete', 'loan_view',
     'loan_interest_payment_list', 'loan_interest_payment_create', 'loan_interest_payment_update', 'loan_interest_payment_delete', 'loan_interest_payment_view', 'get_loan_interest_amount',
     'loan_principle_payment_list', 'loan_principle_payment_create', 'loan_principle_payment_update', 'loan_principle_payment_delete', 'loan_principle_payment_view',
-    'organizational_withdrawal_list', 'organizational_withdrawal_create', 'organizational_withdrawal_update', 'organizational_withdrawal_delete', 'organizational_withdrawal_view',
+    'fund_management_list', 'fund_management_create', 'fund_management_update', 'fund_management_delete', 'fund_management_view',
     'mysetting_view', 'mysetting_update',
     'board_approval_view', 'approve_loan', 'reject_loan', 'update_loan_status',
     'push_notification_list', 'push_notification_create', 'push_notification_update',

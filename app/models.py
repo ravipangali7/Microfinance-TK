@@ -32,6 +32,11 @@ class WithdrawalStatus(models.TextChoices):
     REJECTED = 'rejected', 'Rejected'
 
 
+class FundManagementType(models.TextChoices):
+    CREDIT = 'credit', 'Credit'
+    DEBIT = 'debit', 'Debit'
+
+
 class Gender(models.TextChoices):
     MALE = 'male', 'Male'
     FEMALE = 'female', 'Female'
@@ -390,65 +395,87 @@ class LoanInterestPayment(TimeStampedModel):
         super().delete(*args, **kwargs)
 
 
-# OrganizationalWithdrawal Model
-class OrganizationalWithdrawal(TimeStampedModel):
+# FundManagement Model
+class FundManagement(TimeStampedModel):
+    type = models.CharField(max_length=20, choices=FundManagementType.choices)
     amount = models.DecimalField(max_digits=15, decimal_places=2)
     date = models.DateField(default=timezone.now)
     status = models.CharField(max_length=20, choices=WithdrawalStatus.choices, default=WithdrawalStatus.PENDING)
     purpose = models.TextField()
 
     class Meta:
-        verbose_name = 'Organizational Withdrawal'
-        verbose_name_plural = 'Organizational Withdrawals'
+        verbose_name = 'Fund Management'
+        verbose_name_plural = 'Fund Management'
         ordering = ['-date', '-created_at']
 
     def __str__(self):
-        return f"{self.amount} - {self.date} - {self.status}"
+        return f"{self.get_type_display()} - {self.amount} - {self.date} - {self.status}"
 
     def save(self, *args, **kwargs):
         # Track previous state if updating
         is_new = self.pk is None
         old_status = None
         old_amount = None
+        old_type = None
         
         if not is_new:
             try:
-                old_instance = OrganizationalWithdrawal.objects.get(pk=self.pk)
+                old_instance = FundManagement.objects.get(pk=self.pk)
                 old_status = old_instance.status
                 old_amount = old_instance.amount
-            except OrganizationalWithdrawal.DoesNotExist:
+                old_type = old_instance.type
+            except FundManagement.DoesNotExist:
                 pass
         
         # Save the instance first
         super().save(*args, **kwargs)
         
-        # Update balance based on status changes
+        # Update balance based on status changes and type
         if is_new:
-            # New withdrawal: subtract from balance if approved
+            # New record: apply balance change if approved
             if self.status == WithdrawalStatus.APPROVED:
-                update_system_balance(self.amount, operation='subtract')
+                if self.type == FundManagementType.CREDIT:
+                    update_system_balance(self.amount, operation='add')
+                elif self.type == FundManagementType.DEBIT:
+                    update_system_balance(self.amount, operation='subtract')
         else:
-            # Existing withdrawal: handle status and amount changes
+            # Existing record: handle status, amount, and type changes
             if old_status != self.status:
                 # Status changed
                 if old_status == WithdrawalStatus.APPROVED:
-                    # Was approved, now pending/rejected: add back to balance
-                    update_system_balance(old_amount, operation='add')
+                    # Was approved, now pending/rejected: reverse old balance change
+                    if old_type == FundManagementType.CREDIT:
+                        update_system_balance(old_amount, operation='subtract')
+                    elif old_type == FundManagementType.DEBIT:
+                        update_system_balance(old_amount, operation='add')
                 if self.status == WithdrawalStatus.APPROVED:
-                    # Now approved: subtract from balance
-                    update_system_balance(self.amount, operation='subtract')
-            elif self.status == WithdrawalStatus.APPROVED and old_amount != self.amount:
-                # Amount changed while approved: adjust balance
-                difference = self.amount - old_amount
-                if difference > 0:
-                    update_system_balance(difference, operation='subtract')
-                else:
-                    update_system_balance(abs(difference), operation='add')
+                    # Now approved: apply new balance change
+                    if self.type == FundManagementType.CREDIT:
+                        update_system_balance(self.amount, operation='add')
+                    elif self.type == FundManagementType.DEBIT:
+                        update_system_balance(self.amount, operation='subtract')
+            elif self.status == WithdrawalStatus.APPROVED:
+                # Status is approved, check for amount or type changes
+                if old_amount != self.amount or old_type != self.type:
+                    # Reverse old balance change
+                    if old_type == FundManagementType.CREDIT:
+                        update_system_balance(old_amount, operation='subtract')
+                    elif old_type == FundManagementType.DEBIT:
+                        update_system_balance(old_amount, operation='add')
+                    
+                    # Apply new balance change
+                    if self.type == FundManagementType.CREDIT:
+                        update_system_balance(self.amount, operation='add')
+                    elif self.type == FundManagementType.DEBIT:
+                        update_system_balance(self.amount, operation='subtract')
 
     def delete(self, *args, **kwargs):
-        # If withdrawal was approved, add back to balance
+        # If record was approved, reverse balance change
         if self.status == WithdrawalStatus.APPROVED:
-            update_system_balance(self.amount, operation='add')
+            if self.type == FundManagementType.CREDIT:
+                update_system_balance(self.amount, operation='subtract')
+            elif self.type == FundManagementType.DEBIT:
+                update_system_balance(self.amount, operation='add')
         super().delete(*args, **kwargs)
 
 

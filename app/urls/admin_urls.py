@@ -11,7 +11,7 @@ from app.views.admin import (
     loan_list, loan_create, loan_update, loan_delete, loan_view,
     loan_interest_payment_list, loan_interest_payment_create, loan_interest_payment_update, loan_interest_payment_delete, loan_interest_payment_view, get_loan_interest_amount,
     loan_principle_payment_list, loan_principle_payment_create, loan_principle_payment_update, loan_principle_payment_delete, loan_principle_payment_view,
-    organizational_withdrawal_list, organizational_withdrawal_create, organizational_withdrawal_update, organizational_withdrawal_delete, organizational_withdrawal_view,
+    fund_management_list, fund_management_create, fund_management_update, fund_management_delete, fund_management_view,
     mysetting_view, mysetting_update,
     board_approval_view, approve_loan, reject_loan, update_loan_status,
     push_notification_list, push_notification_create, push_notification_update,
@@ -84,12 +84,12 @@ urlpatterns = [
     path('loan-principle-payments/<int:pk>/edit/', loan_principle_payment_update, name='loan_principle_payment_update'),
     path('loan-principle-payments/<int:pk>/delete/', loan_principle_payment_delete, name='loan_principle_payment_delete'),
     
-    # Organizational Withdrawal CRUD
-    path('organizational-withdrawals/', organizational_withdrawal_list, name='organizational_withdrawal_list'),
-    path('organizational-withdrawals/create/', organizational_withdrawal_create, name='organizational_withdrawal_create'),
-    path('organizational-withdrawals/<int:pk>/', organizational_withdrawal_view, name='organizational_withdrawal_view'),
-    path('organizational-withdrawals/<int:pk>/edit/', organizational_withdrawal_update, name='organizational_withdrawal_update'),
-    path('organizational-withdrawals/<int:pk>/delete/', organizational_withdrawal_delete, name='organizational_withdrawal_delete'),
+    # Fund Management CRUD
+    path('fund-management/', fund_management_list, name='fund_management_list'),
+    path('fund-management/create/', fund_management_create, name='fund_management_create'),
+    path('fund-management/<int:pk>/', fund_management_view, name='fund_management_view'),
+    path('fund-management/<int:pk>/edit/', fund_management_update, name='fund_management_update'),
+    path('fund-management/<int:pk>/delete/', fund_management_delete, name='fund_management_delete'),
     
     # MySetting
     path('settings/', mysetting_view, name='mysetting_view'),

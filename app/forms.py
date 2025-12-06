@@ -4,7 +4,7 @@ from django.core.exceptions import ValidationError
 from decimal import Decimal
 from .models import (
     User, Membership, MembershipUser, MonthlyMembershipDeposit,
-    Loan, LoanInterestPayment, LoanPrinciplePayment, OrganizationalWithdrawal, MySetting,
+    Loan, LoanInterestPayment, LoanPrinciplePayment, FundManagement, MySetting,
     UserStatus, LoanStatus, PaymentStatus, WithdrawalStatus, Gender, PushNotification, Popup
 )
 
@@ -304,14 +304,15 @@ class LoanPrinciplePaymentForm(forms.ModelForm):
         return instance
 
 
-class OrganizationalWithdrawalForm(forms.ModelForm):
+class FundManagementForm(forms.ModelForm):
     class Meta:
-        model = OrganizationalWithdrawal
-        fields = ['amount', 'date', 'status', 'purpose']
+        model = FundManagement
+        fields = ['type', 'amount', 'date', 'status', 'purpose']
         widgets = {
+            'type': forms.Select(attrs={'class': 'form-select'}),
             'amount': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
             'date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
-            'status': forms.Select(attrs={'class': 'form-select'}, choices=WithdrawalStatus.choices),
+            'status': forms.Select(attrs={'class': 'form-select'}),
             'purpose': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
         }
     
@@ -321,18 +322,19 @@ class OrganizationalWithdrawalForm(forms.ModelForm):
         
         if amount and amount <= 0:
             raise forms.ValidationError({
-                'amount': 'Withdrawal amount must be greater than zero.'
+                'amount': 'Amount must be greater than zero.'
             })
         
         return cleaned_data
 
 
-class OrganizationalWithdrawalCreateForm(forms.ModelForm):
-    """Simplified form for organizational withdrawal creation"""
+class FundManagementCreateForm(forms.ModelForm):
+    """Simplified form for fund management creation"""
     class Meta:
-        model = OrganizationalWithdrawal
-        fields = ['amount', 'date', 'purpose']
+        model = FundManagement
+        fields = ['type', 'amount', 'date', 'purpose']
         widgets = {
+            'type': forms.Select(attrs={'class': 'form-select'}),
             'amount': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
             'date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
             'purpose': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
@@ -344,7 +346,7 @@ class OrganizationalWithdrawalCreateForm(forms.ModelForm):
         
         if amount and amount <= 0:
             raise forms.ValidationError({
-                'amount': 'Withdrawal amount must be greater than zero.'
+                'amount': 'Amount must be greater than zero.'
             })
         
         return cleaned_data

@@ -3,7 +3,7 @@ from django.contrib.auth.models import Group
 from django.utils import timezone
 from .models import (
     User, Membership, MembershipUser, MonthlyMembershipDeposit,
-    Loan, LoanInterestPayment, LoanPrinciplePayment, OrganizationalWithdrawal, MySetting,
+    Loan, LoanInterestPayment, LoanPrinciplePayment, FundManagement, MySetting,
     PaymentTransaction, PushNotification, Popup, SupportTicket, SupportTicketReply,
     LoanStatus, PaymentStatus, WithdrawalStatus, SupportTicketStatus
 )
@@ -170,30 +170,30 @@ class LoanPrinciplePaymentAdmin(admin.ModelAdmin):
         return qs.select_related('loan', 'loan__user')
 
 
-@admin.register(OrganizationalWithdrawal)
-class OrganizationalWithdrawalAdmin(admin.ModelAdmin):
-    list_display = ['amount', 'date', 'status', 'purpose', 'created_at']
-    list_filter = ['status', 'date', 'created_at']
+@admin.register(FundManagement)
+class FundManagementAdmin(admin.ModelAdmin):
+    list_display = ['type', 'amount', 'date', 'status', 'purpose', 'created_at']
+    list_filter = ['type', 'status', 'date', 'created_at']
     search_fields = ['purpose']
     readonly_fields = ['created_at', 'updated_at']
     date_hierarchy = 'date'
     ordering = ['-date', '-created_at']
     
-    actions = ['approve_withdrawals', 'reject_withdrawals']
+    actions = ['approve_fund_management', 'reject_fund_management']
     
-    @admin.action(description='Approve selected withdrawals')
-    def approve_withdrawals(self, request, queryset):
+    @admin.action(description='Approve selected fund management records')
+    def approve_fund_management(self, request, queryset):
         updated = queryset.filter(status=WithdrawalStatus.PENDING).update(
             status=WithdrawalStatus.APPROVED
         )
-        self.message_user(request, f'{updated} withdrawal(s) approved.')
+        self.message_user(request, f'{updated} fund management record(s) approved.')
     
-    @admin.action(description='Reject selected withdrawals')
-    def reject_withdrawals(self, request, queryset):
+    @admin.action(description='Reject selected fund management records')
+    def reject_fund_management(self, request, queryset):
         updated = queryset.filter(status=WithdrawalStatus.PENDING).update(
             status=WithdrawalStatus.REJECTED
         )
-        self.message_user(request, f'{updated} withdrawal(s) rejected.')
+        self.message_user(request, f'{updated} fund management record(s) rejected.')
 
 
 @admin.register(MySetting)

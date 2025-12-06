@@ -32,15 +32,15 @@ from .loan_principle_payment_api_views import (
     loan_principle_payment_delete_api
 )
 from .organizational_withdrawal_api_views import (
-    organizational_withdrawal_list_api, organizational_withdrawal_create_api,
-    organizational_withdrawal_detail_api, organizational_withdrawal_update_api,
-    organizational_withdrawal_delete_api
+    fund_management_list_api, fund_management_create_api,
+    fund_management_detail_api, fund_management_update_api,
+    fund_management_delete_api
 )
 from .mysetting_api_views import mysetting_detail_api, mysetting_update_api, loan_settings_api
 from .dashboard_api_views import dashboard_api
 from .board_approval_api_views import (
     board_approval_list_api, approve_loan_api, reject_loan_api,
-    update_loan_status_api, approve_withdrawal_api, reject_withdrawal_api
+    update_loan_status_api, approve_fund_management_api, reject_fund_management_api
 )
 from .payment_check_api_views import payment_check_api
 from .payment_gateway_api_views import (
@@ -70,10 +70,10 @@ __all__ = [
     'loan_list_api', 'loan_create_api', 'loan_detail_api', 'loan_update_api', 'loan_delete_api', 'loan_details_api',
     'loan_interest_payment_list_api', 'loan_interest_payment_create_api', 'loan_interest_payment_detail_api', 'loan_interest_payment_update_api', 'loan_interest_payment_delete_api',
     'loan_principle_payment_list_api', 'loan_principle_payment_create_api', 'loan_principle_payment_detail_api', 'loan_principle_payment_update_api', 'loan_principle_payment_delete_api',
-    'organizational_withdrawal_list_api', 'organizational_withdrawal_create_api', 'organizational_withdrawal_detail_api', 'organizational_withdrawal_update_api', 'organizational_withdrawal_delete_api',
+    'fund_management_list_api', 'fund_management_create_api', 'fund_management_detail_api', 'fund_management_update_api', 'fund_management_delete_api',
     'mysetting_detail_api', 'mysetting_update_api', 'loan_settings_api',
     'dashboard_api',
-    'board_approval_list_api', 'approve_loan_api', 'reject_loan_api', 'update_loan_status_api', 'approve_withdrawal_api', 'reject_withdrawal_api',
+    'board_approval_list_api', 'approve_loan_api', 'reject_loan_api', 'update_loan_status_api', 'approve_fund_management_api', 'reject_fund_management_api',
     'payment_check_api',
     'create_payment_order_api',
     'check_payment_status_api',

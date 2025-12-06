@@ -1,0 +1,213 @@
+{% extends 'core/crud/base_list.html' %}
+
+{% block page_title %}Fund Management{% endblock %}
+
+{% block add_button %}
+{% if is_admin_or_board %}
+<a href="{% url 'fund_management_create' %}" class="btn btn-primary ms-2">
+    <i class="align-middle" data-feather="plus"></i> Add New Fund Transaction
+</a>
+{% endif %}
+{% endblock %}
+
+{% block stats_cards %}
+<div class="row mb-3">
+    <div class="col-md-3">
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-grow-1">
+                        <h6 class="text-muted mb-1">Total Records</h6>
+                        <h3 class="mb-0">{{ stats.total }}</h3>
+                    </div>
+                    <div class="text-primary">
+                        <i class="align-middle" data-feather="file-text" style="width: 32px; height: 32px;"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-grow-1">
+                        <h6 class="text-muted mb-1">Total Amount</h6>
+                        <h3 class="mb-0">Rs. {{ stats.total_amount|floatformat:2 }}</h3>
+                    </div>
+                    <div class="text-info">
+                        <i class="align-middle" data-feather="dollar-sign" style="width: 32px; height: 32px;"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-grow-1">
+                        <h6 class="text-muted mb-1">Credit Amount</h6>
+                        <h3 class="mb-0 text-success">Rs. {{ stats.credit_amount|floatformat:2 }}</h3>
+                        <small class="text-muted">{{ stats.credit_count }} records</small>
+                    </div>
+                    <div class="text-success">
+                        <i class="align-middle" data-feather="trending-up" style="width: 32px; height: 32px;"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-grow-1">
+                        <h6 class="text-muted mb-1">Debit Amount</h6>
+                        <h3 class="mb-0 text-danger">Rs. {{ stats.debit_amount|floatformat:2 }}</h3>
+                        <small class="text-muted">{{ stats.debit_count }} records</small>
+                    </div>
+                    <div class="text-danger">
+                        <i class="align-middle" data-feather="trending-down" style="width: 32px; height: 32px;"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="row mb-3">
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-grow-1">
+                        <h6 class="text-muted mb-1">Pending</h6>
+                        <h3 class="mb-0">{{ stats.pending }}</h3>
+                    </div>
+                    <div class="text-warning">
+                        <i class="align-middle" data-feather="clock" style="width: 32px; height: 32px;"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-grow-1">
+                        <h6 class="text-muted mb-1">Approved</h6>
+                        <h3 class="mb-0">{{ stats.approved }}</h3>
+                    </div>
+                    <div class="text-success">
+                        <i class="align-middle" data-feather="check-circle" style="width: 32px; height: 32px;"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-grow-1">
+                        <h6 class="text-muted mb-1">Rejected</h6>
+                        <h3 class="mb-0">{{ stats.rejected }}</h3>
+                    </div>
+                    <div class="text-danger">
+                        <i class="align-middle" data-feather="x-circle" style="width: 32px; height: 32px;"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block filters %}
+<div class="col-md-2">
+    <label class="form-label">Type</label>
+    <select name="type" class="form-select">
+        <option value="">All Types</option>
+        {% for value, label in all_types %}
+        <option value="{{ value }}" {% if filters.type == value %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+    </select>
+</div>
+<div class="col-md-2">
+    <label class="form-label">Status</label>
+    <select name="status" class="form-select">
+        <option value="">All Statuses</option>
+        {% for value, label in all_statuses %}
+        <option value="{{ value }}" {% if filters.status == value %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+    </select>
+</div>
+<div class="col-md-2">
+    <label class="form-label">Amount From</label>
+    <input type="number" name="from_amount" class="form-control" placeholder="Min" value="{{ filters.from_amount }}" step="0.01">
+</div>
+<div class="col-md-2">
+    <label class="form-label">Amount To</label>
+    <input type="number" name="to_amount" class="form-control" placeholder="Max" value="{{ filters.to_amount }}" step="0.01">
+</div>
+<div class="col-md-3">
+    <label class="form-label">Date Range</label>
+    <input type="text" name="date_range" id="date_range" class="form-control" placeholder="Select date range" value="{{ filters.date_range }}">
+</div>
+{% endblock %}
+
+{% block table_header %}
+<tr>
+    <th>Type</th>
+    <th>Amount</th>
+    <th>Date</th>
+    <th>Status</th>
+    <th>Purpose</th>
+    <th>Actions</th>
+</tr>
+{% endblock %}
+
+{% block table_body %}
+{% for record in fund_management %}
+<tr>
+    <td>
+        {% if record.type == 'credit' %}
+            <span class="badge bg-success">Credit</span>
+        {% else %}
+            <span class="badge bg-danger">Debit</span>
+        {% endif %}
+    </td>
+    <td>Rs. {{ record.amount|floatformat:2 }}</td>
+    <td>{{ record.date }}</td>
+    <td>
+        {% if record.status == 'approved' %}
+            <span class="badge bg-success">Approved</span>
+        {% elif record.status == 'rejected' %}
+            <span class="badge bg-danger">Rejected</span>
+        {% else %}
+            <span class="badge bg-warning">Pending</span>
+        {% endif %}
+    </td>
+    <td>{{ record.purpose|truncatewords:10 }}</td>
+    <td>
+        <a href="{% url 'fund_management_view' record.pk %}" class="btn btn-sm btn-info" title="View">
+            <i class="align-middle" data-feather="eye"></i>
+        </a>
+        {% if is_admin_or_board %}
+        <a href="{% url 'fund_management_update' record.pk %}" class="btn btn-sm btn-primary" title="Edit">
+            <i class="align-middle" data-feather="edit"></i>
+        </a>
+        <button class="btn btn-sm btn-danger" onclick="deleteItem('{% url 'fund_management_delete' record.pk %}', 'Rs. {{ record.amount }}')" title="Delete">
+            <i class="align-middle" data-feather="trash-2"></i>
+        </button>
+        {% endif %}
+    </td>
+</tr>
+{% empty %}
+<tr>
+    <td colspan="6" class="text-center text-muted">No fund management records found</td>
+</tr>
+{% endfor %}
+{% endblock %}
+
