@@ -715,6 +715,7 @@ class PaymentTransaction(TimeStampedModel):
         ('deposit', 'Deposit'),
         ('interest', 'Interest Payment'),
         ('principle', 'Principle Payment'),
+        ('penalty', 'Penalty'),
     ]
     
     PAYMENT_METHOD_CHOICES = [

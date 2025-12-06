@@ -10,7 +10,7 @@ from datetime import datetime, timedelta
 from urllib.parse import unquote, urlparse, parse_qs
 from app.models import (
     PaymentTransaction, MonthlyMembershipDeposit, 
-    LoanInterestPayment, LoanPrinciplePayment, User
+    LoanInterestPayment, LoanPrinciplePayment, User, Penalty
 )
 from app.services.payment_gateway_service import PaymentGatewayService
 from decimal import Decimal
@@ -25,8 +25,8 @@ def create_payment_order_api(request):
     
     Request body:
     {
-        "payment_type": "deposit", "interest", or "principle",
-        "payment_id": <id of deposit, interest payment, or principle payment>,
+        "payment_type": "deposit", "interest", "principle", or "penalty",
+        "payment_id": <id of deposit, interest payment, principle payment, or penalty>,
         "amount": <amount>
     }
     """
@@ -35,9 +35,9 @@ def create_payment_order_api(request):
     amount = request.data.get('amount')
     
     # Validate inputs
-    if not payment_type or payment_type not in ['deposit', 'interest', 'principle']:
+    if not payment_type or payment_type not in ['deposit', 'interest', 'principle', 'penalty']:
         return Response(
-            {'error': 'Invalid payment_type. Must be "deposit", "interest", or "principle".'},
+            {'error': 'Invalid payment_type. Must be "deposit", "interest", "principle", or "penalty".'},
             status=status.HTTP_400_BAD_REQUEST
         )
     
@@ -77,6 +77,20 @@ def create_payment_order_api(request):
             return Response(
                 {'error': 'You can only create payment orders for your own loan payments.'},
                 status=status.HTTP_403_FORBIDDEN
+            )
+    elif payment_type == 'penalty':
+        payment_obj = get_object_or_404(Penalty, pk=payment_id)
+        # Verify user owns this penalty
+        if payment_obj.user.id != request.user.id:
+            return Response(
+                {'error': 'You can only create payment orders for your own penalties.'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        # Validate penalty amount matches request amount
+        if payment_obj.penalty_amount != amount_decimal:
+            return Response(
+                {'error': f'Penalty amount mismatch. Expected Rs. {payment_obj.penalty_amount}, got Rs. {amount_decimal}.'},
+                status=status.HTTP_400_BAD_REQUEST
             )
     else:  # principle
         payment_obj = get_object_or_404(LoanPrinciplePayment, pk=payment_id)

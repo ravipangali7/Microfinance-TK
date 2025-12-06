@@ -5,7 +5,7 @@ from urllib.parse import quote
 from django.conf import settings
 from django.utils import timezone
 from datetime import datetime
-from app.models import PaymentTransaction, MonthlyMembershipDeposit, LoanInterestPayment, LoanPrinciplePayment, User
+from app.models import PaymentTransaction, MonthlyMembershipDeposit, LoanInterestPayment, LoanPrinciplePayment, User, Penalty
 
 
 class PaymentGatewayService:
@@ -23,8 +23,8 @@ class PaymentGatewayService:
         Create payment order with ekqr.in gateway
         
         Args:
-            payment_type: 'deposit' or 'interest'
-            payment_id: ID of MonthlyMembershipDeposit or LoanInterestPayment
+            payment_type: 'deposit', 'interest', 'principle', or 'penalty'
+            payment_id: ID of MonthlyMembershipDeposit, LoanInterestPayment, LoanPrinciplePayment, or Penalty
             user: User object
             amount: Payment amount
             redirect_url: URL to redirect after payment
@@ -194,7 +194,7 @@ class PaymentGatewayService:
         
         Args:
             client_txn_id: Client transaction ID
-            payment_type: 'deposit', 'interest', or 'principle'
+            payment_type: 'deposit', 'interest', 'principle', or 'penalty'
             payment_id: ID of related payment object
             status_response: Response from check_payment_status with success status
         
@@ -228,6 +228,14 @@ class PaymentGatewayService:
                 amount = principle_payment.amount
             except LoanPrinciplePayment.DoesNotExist:
                 print(f"[ERROR] create_payment_transaction_on_success: Principle payment {payment_id} not found")
+                return None
+        elif payment_type == 'penalty':
+            try:
+                penalty = Penalty.objects.get(pk=payment_id)
+                user = penalty.user
+                amount = penalty.penalty_amount
+            except Penalty.DoesNotExist:
+                print(f"[ERROR] create_payment_transaction_on_success: Penalty {payment_id} not found")
                 return None
         
         if not user:
@@ -271,6 +279,21 @@ class PaymentGatewayService:
                     if not deposit.paid_date:
                         deposit.paid_date = payment_transaction.txn_date
                     deposit.save()
+                    
+                    # Auto-pay related penalties for this deposit
+                    from app.models import Penalty, PaymentStatus, PenaltyType
+                    related_penalties = Penalty.objects.filter(
+                        penalty_type=PenaltyType.DEPOSIT,
+                        related_object_id=payment_id,
+                        payment_status=PaymentStatus.PENDING
+                    )
+                    for penalty in related_penalties:
+                        penalty.payment_status = PaymentStatus.PAID
+                        if not penalty.paid_date:
+                            penalty.paid_date = payment_transaction.txn_date
+                        penalty.save()
+                        print(f"[INFO] Auto-paid penalty {penalty.id} for deposit {payment_id}")
+                        
                 except MonthlyMembershipDeposit.DoesNotExist:
                     pass
             elif payment_type == 'interest':
@@ -280,6 +303,21 @@ class PaymentGatewayService:
                     if not interest_payment.paid_date:
                         interest_payment.paid_date = payment_transaction.txn_date
                     interest_payment.save()
+                    
+                    # Auto-pay related penalties for this interest payment
+                    from app.models import Penalty, PaymentStatus, PenaltyType
+                    related_penalties = Penalty.objects.filter(
+                        penalty_type=PenaltyType.INTEREST,
+                        related_object_id=payment_id,
+                        payment_status=PaymentStatus.PENDING
+                    )
+                    for penalty in related_penalties:
+                        penalty.payment_status = PaymentStatus.PAID
+                        if not penalty.paid_date:
+                            penalty.paid_date = payment_transaction.txn_date
+                        penalty.save()
+                        print(f"[INFO] Auto-paid penalty {penalty.id} for interest payment {payment_id}")
+                        
                 except LoanInterestPayment.DoesNotExist:
                     pass
             elif payment_type == 'principle':
@@ -290,6 +328,17 @@ class PaymentGatewayService:
                         principle_payment.paid_date = payment_transaction.txn_date
                     principle_payment.save()
                 except LoanPrinciplePayment.DoesNotExist:
+                    pass
+            elif payment_type == 'penalty':
+                try:
+                    penalty = Penalty.objects.get(pk=payment_id)
+                    from app.models import PaymentStatus
+                    penalty.payment_status = PaymentStatus.PAID
+                    if not penalty.paid_date:
+                        penalty.paid_date = payment_transaction.txn_date
+                    penalty.save()
+                    print(f"[INFO] create_payment_transaction_on_success: Marked penalty {penalty.id} as paid")
+                except Penalty.DoesNotExist:
                     pass
             
             print(f"[INFO] create_payment_transaction_on_success: Created PaymentTransaction {payment_transaction.id} for {payment_type} {payment_id}")
