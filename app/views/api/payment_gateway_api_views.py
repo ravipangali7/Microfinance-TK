@@ -196,7 +196,7 @@ def check_payment_status_api(request):
     try:
         parts = client_txn_id.split('_')
         if len(parts) >= 3:
-            payment_type = parts[0]  # deposit, interest, or principle
+            payment_type = parts[0]  # deposit, interest, principle, or penalty
             payment_id = int(parts[1])
         else:
             raise ValueError("Invalid client_txn_id format")
@@ -217,6 +217,13 @@ def check_payment_status_api(request):
     elif payment_type == 'interest':
         payment_obj = get_object_or_404(LoanInterestPayment, pk=payment_id)
         if payment_obj.loan.user.id != request.user.id:
+            return Response(
+                {'error': 'Access denied.'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+    elif payment_type == 'penalty':
+        payment_obj = get_object_or_404(Penalty, pk=payment_id)
+        if payment_obj.user.id != request.user.id:
             return Response(
                 {'error': 'Access denied.'},
                 status=status.HTTP_403_FORBIDDEN
@@ -351,7 +358,7 @@ def payment_callback_api(request):
     try:
         parts = client_txn_id.split('_')
         if len(parts) >= 3:
-            payment_type = parts[0]  # deposit, interest, or principle
+            payment_type = parts[0]  # deposit, interest, principle, or penalty
             payment_id = int(parts[1])
         else:
             raise ValueError("Invalid client_txn_id format")

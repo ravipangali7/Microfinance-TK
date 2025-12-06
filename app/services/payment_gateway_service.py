@@ -63,6 +63,8 @@ class PaymentGatewayService:
             p_info = "Membership Deposit"
         elif payment_type == 'interest':
             p_info = "Loan Interest Payment"
+        elif payment_type == 'penalty':
+            p_info = "Penalty Payment"
         else:  # principle
             p_info = "Loan Principle Payment"
         
@@ -406,6 +408,17 @@ class PaymentGatewayService:
                     principle_payment.payment_status = 'paid'
                     principle_payment.save()
                 except LoanPrinciplePayment.DoesNotExist:
+                    pass
+            elif payment_transaction.payment_type == 'penalty':
+                try:
+                    from app.models import Penalty, PaymentStatus
+                    penalty = Penalty.objects.get(pk=payment_transaction.related_object_id)
+                    penalty.payment_status = PaymentStatus.PAID
+                    if not penalty.paid_date:
+                        penalty.paid_date = payment_transaction.txn_date
+                    penalty.save()
+                    print(f"[INFO] update_payment_status: Marked penalty {penalty.id} as paid")
+                except Penalty.DoesNotExist:
                     pass
             
             return True
