@@ -20,7 +20,7 @@ from app.views.admin import (
     support_ticket_list, support_ticket_view,
     support_ticket_update_status, support_ticket_add_reply,
     payment_transaction_list, payment_transaction_view,
-    membership_deposit_report, loan_report, user_report, main_report,
+    membership_deposit_report, loan_report, user_report, main_report, share_report,
 )
 
 urlpatterns = [
@@ -133,5 +133,6 @@ urlpatterns = [
     path('reports/loans/', loan_report, name='loan_report'),
     path('reports/users/', user_report, name='user_report'),
     path('reports/main/', main_report, name='main_report'),
+    path('reports/share/', share_report, name='share_report'),
 ]
 

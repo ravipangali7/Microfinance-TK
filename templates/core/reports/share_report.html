@@ -1,0 +1,269 @@
+{% extends 'core/layouts/base.html' %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid p-0">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3 mb-0">
+            <i class="align-middle me-2" data-feather="pie-chart"></i>
+            Share Report
+        </h1>
+        <button onclick="window.print()" class="btn btn-primary">
+            <i class="align-middle me-1" data-feather="printer"></i> Print Report
+        </button>
+    </div>
+
+    <!-- Large Line Chart Section -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="card-title mb-0">
+                <i class="align-middle me-1" data-feather="trending-up"></i>
+                Monthly Share Trend (Last 12 Months)
+            </h5>
+        </div>
+        <div class="card-body">
+            <div class="chart-container" style="position: relative; height: 400px;">
+                <canvas id="shareChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics Cards Section -->
+    <div class="row mb-4">
+        <!-- Current Month Card -->
+        <div class="col-md-4 mb-3">
+            <div class="card border-primary">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="card-title mb-0">
+                        <i class="align-middle me-1" data-feather="calendar"></i>
+                        Current Month
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <h6 class="text-muted mb-1">Total Share</h6>
+                        <h3 class="mb-0 text-primary">Rs. {{ current_month_data.total_share|floatformat:2 }}</h3>
+                    </div>
+                    <div class="mb-3">
+                        <h6 class="text-muted mb-1">Per Member Share</h6>
+                        <h3 class="mb-0 text-primary">Rs. {{ current_month_data.per_member_share|floatformat:2 }}</h3>
+                    </div>
+                    <div>
+                        <h6 class="text-muted mb-1">Active Members</h6>
+                        <h4 class="mb-0">{{ current_month_data.active_members }}</h4>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Last Month Card -->
+        <div class="col-md-4 mb-3">
+            <div class="card border-info">
+                <div class="card-header bg-info text-white">
+                    <h5 class="card-title mb-0">
+                        <i class="align-middle me-1" data-feather="calendar"></i>
+                        Last Month
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if last_month_data %}
+                    <div class="mb-3">
+                        <h6 class="text-muted mb-1">Total Share</h6>
+                        <h3 class="mb-0 text-info">Rs. {{ last_month_data.total_share|floatformat:2 }}</h3>
+                    </div>
+                    <div class="mb-3">
+                        <h6 class="text-muted mb-1">Per Member Share</h6>
+                        <h3 class="mb-0 text-info">Rs. {{ last_month_data.per_member_share|floatformat:2 }}</h3>
+                    </div>
+                    <div>
+                        <h6 class="text-muted mb-1">Active Members</h6>
+                        <h4 class="mb-0">{{ last_month_data.active_members }}</h4>
+                    </div>
+                    {% else %}
+                    <p class="text-muted mb-0">No previous month data available</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Change Card -->
+        <div class="col-md-4 mb-3">
+            <div class="card border-{% if total_share_change >= 0 %}success{% else %}danger{% endif %}">
+                <div class="card-header bg-{% if total_share_change >= 0 %}success{% else %}danger{% endif %} text-white">
+                    <h5 class="card-title mb-0">
+                        <i class="align-middle me-1" data-feather="{% if total_share_change >= 0 %}trending-up{% else %}trending-down{% endif %}"></i>
+                        Change (This Month)
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <h6 class="text-muted mb-1">Total Share Change</h6>
+                        <h3 class="mb-0 text-{% if total_share_change >= 0 %}success{% else %}danger{% endif %}">
+                            {% if total_share_change >= 0 %}+{% endif %}Rs. {{ total_share_change|floatformat:2 }}
+                        </h3>
+                        <small class="text-{% if total_share_change >= 0 %}success{% else %}danger{% endif %}">
+                            ({% if total_share_change_percent >= 0 %}+{% endif %}{{ total_share_change_percent|floatformat:2 }}%)
+                        </small>
+                    </div>
+                    <div class="mb-3">
+                        <h6 class="text-muted mb-1">Per Member Share Change</h6>
+                        <h3 class="mb-0 text-{% if per_member_share_change >= 0 %}success{% else %}danger{% endif %}">
+                            {% if per_member_share_change >= 0 %}+{% endif %}Rs. {{ per_member_share_change|floatformat:2 }}
+                        </h3>
+                        <small class="text-{% if per_member_share_change >= 0 %}success{% else %}danger{% endif %}">
+                            ({% if per_member_share_change_percent >= 0 %}+{% endif %}{{ per_member_share_change_percent|floatformat:2 }}%)
+                        </small>
+                    </div>
+                    <div>
+                        <h6 class="text-muted mb-1">Member Count Change</h6>
+                        <h4 class="mb-0">
+                            {% if member_count_change >= 0 %}
+                                <span class="text-success">+{{ member_count_change }}</span>
+                            {% else %}
+                                <span class="text-danger">{{ member_count_change }}</span>
+                            {% endif %}
+                        </h4>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Detailed Breakdown Table -->
+    <div class="card">
+        <div class="card-header">
+            <h5 class="card-title mb-0">
+                <i class="align-middle me-1" data-feather="list"></i>
+                Monthly Breakdown
+            </h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Month</th>
+                            <th>Total Share</th>
+                            <th>Active Members</th>
+                            <th>Per Member Share</th>
+                            <th>Change from Previous</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for month in months_data %}
+                        <tr>
+                            <td><strong>{{ month.month }}</strong></td>
+                            <td>Rs. {{ month.total_share|floatformat:2 }}</td>
+                            <td>{{ month.active_members }}</td>
+                            <td>Rs. {{ month.per_member_share|floatformat:2 }}</td>
+                            <td>
+                                {% if month.change_from_previous is not None %}
+                                    {% if month.change_from_previous >= 0 %}
+                                        <span class="text-success">
+                                            +Rs. {{ month.change_from_previous|floatformat:2 }}
+                                        </span>
+                                    {% else %}
+                                        <span class="text-danger">
+                                            Rs. {{ month.change_from_previous|floatformat:2 }}
+                                        </span>
+                                    {% endif %}
+                                {% else %}
+                                    <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="5" class="text-center text-muted">No data available</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+@media print {
+    .card-header, .btn, nav, .sidebar { display: none !important; }
+    .card { border: none !important; box-shadow: none !important; }
+    body { padding: 0 !important; }
+    .table { font-size: 0.8rem; }
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize Chart.js
+    const ctx = document.getElementById('shareChart');
+    if (ctx) {
+        const chartData = {{ chart_data }};
+        
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: chartData.map(d => d.month),
+                datasets: [{
+                    label: 'Total Share',
+                    data: chartData.map(d => d.total_share),
+                    borderColor: 'rgb(59, 130, 246)',
+                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                    tension: 0.4,
+                    fill: false,
+                    yAxisID: 'y',
+                }, {
+                    label: 'Per Member Share',
+                    data: chartData.map(d => d.per_member_share),
+                    borderColor: 'rgb(34, 197, 94)',
+                    backgroundColor: 'rgba(34, 197, 94, 0.1)',
+                    tension: 0.4,
+                    fill: false,
+                    yAxisID: 'y',
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: {
+                    mode: 'index',
+                    intersect: false,
+                },
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'top',
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return context.dataset.label + ': Rs. ' + context.parsed.y.toFixed(2);
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return 'Rs. ' + value.toFixed(2);
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+    
+    // Initialize Feather icons
+    if (typeof feather !== 'undefined') {
+        feather.replace();
+    }
+});
+</script>
+{% endblock %}
+

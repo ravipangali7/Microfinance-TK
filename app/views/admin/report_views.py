@@ -3,12 +3,17 @@ from django.contrib.auth.decorators import login_required
 from django.db.models import Sum, Count, Avg, Q, DecimalField
 from django.db.models.functions import Coalesce
 from django.utils import timezone
+from django.utils.safestring import mark_safe
 from datetime import datetime, timedelta
 from decimal import Decimal
+import calendar
+import json
+from dateutil.relativedelta import relativedelta
 
 from app.models import (
     MonthlyMembershipDeposit, Loan, LoanInterestPayment, LoanPrinciplePayment,
-    User, PaymentTransaction, MySetting, PaymentStatus, LoanStatus
+    User, PaymentTransaction, MySetting, PaymentStatus, LoanStatus,
+    FundManagement, UserStatus, WithdrawalStatus, FundManagementType
 )
 from .helpers import get_role_context
 
@@ -407,4 +412,187 @@ def main_report(request):
     }
     context.update(get_role_context(request))
     return render(request, 'core/reports/main_report.html', context)
+
+
+@login_required
+def share_report(request):
+    """Share Report showing monthly trends of total share and per-member share"""
+    
+    # Get current date and calculate months
+    today = timezone.now().date()
+    current_month_start = today.replace(day=1)
+    last_month_end = current_month_start - timedelta(days=1)
+    last_month_start = last_month_end.replace(day=1)
+    
+    # Calculate last 12 months
+    months_data = []
+    chart_data = []
+    
+    # Calculate monthly data for last 12 months
+    for i in range(11, -1, -1):  # From 11 months ago to current month
+        month_date = today - relativedelta(months=i)
+        month_start = month_date.replace(day=1)
+        # Get last day of month
+        last_day = calendar.monthrange(month_date.year, month_date.month)[1]
+        month_end = month_date.replace(day=last_day)
+        
+        # Calculate system balance at end of this month by summing all transactions
+        # Income (adds to balance):
+        # - Paid deposits
+        total_deposits = MonthlyMembershipDeposit.objects.filter(
+            payment_status=PaymentStatus.PAID,
+            date__lte=month_end
+        ).aggregate(
+            total=Coalesce(Sum('amount'), Decimal('0.00'), output_field=DecimalField())
+        )['total'] or Decimal('0.00')
+        
+        # - Paid interest payments
+        total_interest = LoanInterestPayment.objects.filter(
+            payment_status=PaymentStatus.PAID,
+            paid_date__lte=month_end
+        ).aggregate(
+            total=Coalesce(Sum('amount'), Decimal('0.00'), output_field=DecimalField())
+        )['total'] or Decimal('0.00')
+        
+        # - Paid principal payments (money coming back)
+        total_principal = LoanPrinciplePayment.objects.filter(
+            payment_status=PaymentStatus.PAID,
+            paid_date__lte=month_end
+        ).aggregate(
+            total=Coalesce(Sum('amount'), Decimal('0.00'), output_field=DecimalField())
+        )['total'] or Decimal('0.00')
+        
+        # - Approved fund management credits
+        total_credits = FundManagement.objects.filter(
+            type=FundManagementType.CREDIT,
+            status=WithdrawalStatus.APPROVED,
+            date__lte=month_end
+        ).aggregate(
+            total=Coalesce(Sum('amount'), Decimal('0.00'), output_field=DecimalField())
+        )['total'] or Decimal('0.00')
+        
+        # Expenses (subtracts from balance):
+        # - Loans disbursed (active loans with disbursed_date)
+        total_loans_disbursed = Loan.objects.filter(
+            disbursed_date__isnull=False,
+            disbursed_date__lte=month_end
+        ).aggregate(
+            total=Coalesce(Sum('principal_amount'), Decimal('0.00'), output_field=DecimalField())
+        )['total'] or Decimal('0.00')
+        
+        # - Approved fund management debits
+        total_debits = FundManagement.objects.filter(
+            type=FundManagementType.DEBIT,
+            status=WithdrawalStatus.APPROVED,
+            date__lte=month_end
+        ).aggregate(
+            total=Coalesce(Sum('amount'), Decimal('0.00'), output_field=DecimalField())
+        )['total'] or Decimal('0.00')
+        
+        # Calculate balance: deposits + interest + principal + credits - loans - debits
+        # Starting from 0 and building up from all transactions
+        month_balance = total_deposits + total_interest + total_principal + total_credits - total_loans_disbursed - total_debits
+        
+        # Count active members at end of this month
+        active_members = User.objects.filter(
+            status=UserStatus.ACTIVE,
+            created_at__date__lte=month_end
+        ).count()
+        
+        # Calculate per-member share
+        if active_members > 0:
+            per_member_share = month_balance / active_members
+        else:
+            per_member_share = Decimal('0.00')
+        
+        month_label = month_date.strftime('%b %Y')
+        
+        # Calculate change from previous month
+        change_from_previous = None
+        if months_data:
+            prev_month_data = months_data[-1]
+            change_from_previous = month_balance - prev_month_data['total_share']
+        
+        months_data.append({
+            'month': month_label,
+            'month_date': month_date,
+            'month_start': month_start,
+            'month_end': month_end,
+            'total_share': month_balance,
+            'active_members': active_members,
+            'per_member_share': per_member_share,
+            'change_from_previous': change_from_previous,
+        })
+        
+        chart_data.append({
+            'month': month_label,
+            'total_share': float(month_balance),
+            'per_member_share': float(per_member_share),
+        })
+    
+    # Get current month data (last item in months_data)
+    current_month_data = months_data[-1] if months_data else None
+    last_month_data = months_data[-2] if len(months_data) >= 2 else None
+    
+    # Calculate changes
+    if current_month_data and last_month_data:
+        total_share_change = current_month_data['total_share'] - last_month_data['total_share']
+        per_member_share_change = current_month_data['per_member_share'] - last_month_data['per_member_share']
+        
+        if last_month_data['total_share'] > 0:
+            total_share_change_percent = (total_share_change / last_month_data['total_share']) * 100
+        else:
+            total_share_change_percent = Decimal('0.00')
+        
+        if last_month_data['per_member_share'] > 0:
+            per_member_share_change_percent = (per_member_share_change / last_month_data['per_member_share']) * 100
+        else:
+            per_member_share_change_percent = Decimal('0.00')
+    else:
+        total_share_change = Decimal('0.00')
+        per_member_share_change = Decimal('0.00')
+        total_share_change_percent = Decimal('0.00')
+        per_member_share_change_percent = Decimal('0.00')
+    
+    # Use actual current balance from MySetting for current month
+    try:
+        settings = MySetting.get_settings()
+        current_balance = settings.balance
+        current_active_members = User.objects.filter(status=UserStatus.ACTIVE).count()
+        if current_active_members > 0:
+            current_per_member_share = current_balance / current_active_members
+        else:
+            current_per_member_share = Decimal('0.00')
+        
+        # Update current month data with actual values
+        if current_month_data:
+            current_month_data['total_share'] = current_balance
+            current_month_data['active_members'] = current_active_members
+            current_month_data['per_member_share'] = current_per_member_share
+            # Update chart data too
+            if chart_data:
+                chart_data[-1]['total_share'] = float(current_balance)
+                chart_data[-1]['per_member_share'] = float(current_per_member_share)
+    except:
+        pass
+    
+    # Calculate member count change
+    if current_month_data and last_month_data:
+        member_count_change = current_month_data['active_members'] - last_month_data['active_members']
+    else:
+        member_count_change = 0
+    
+    context = {
+        'chart_data': mark_safe(json.dumps(chart_data)),
+        'months_data': months_data,
+        'current_month_data': current_month_data,
+        'last_month_data': last_month_data,
+        'total_share_change': total_share_change,
+        'per_member_share_change': per_member_share_change,
+        'total_share_change_percent': total_share_change_percent,
+        'per_member_share_change_percent': per_member_share_change_percent,
+        'member_count_change': member_count_change,
+    }
+    context.update(get_role_context(request))
+    return render(request, 'core/reports/share_report.html', context)
 
