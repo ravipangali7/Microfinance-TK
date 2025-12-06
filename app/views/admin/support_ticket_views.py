@@ -6,8 +6,8 @@ from django.contrib import messages
 from app.models import SupportTicket, SupportTicketReply, SupportTicketStatus
 from .helpers import is_admin, is_admin_or_board, get_role_context
 from .filter_helpers import (
-    get_default_date_range, parse_date_range, format_date_range,
-    apply_date_filter, apply_text_search
+    parse_date_range, format_date_range,
+    apply_text_search
 )
 
 
@@ -17,33 +17,45 @@ def support_ticket_list(request):
     # Admin and Board can view all tickets, Members can only view their own
     from app.models import UserStatus
     
+    # Get all tickets for stats calculation (unfiltered)
+    if is_admin_or_board(request.user):
+        all_tickets = SupportTicket.objects.all()
+    else:
+        all_tickets = SupportTicket.objects.filter(user=request.user)
+    
+    # Calculate stats from ALL tickets (not filtered)
+    total_tickets = all_tickets.count()
+    pending_tickets = all_tickets.filter(status=SupportTicketStatus.PENDING).count()
+    open_tickets = all_tickets.filter(status=SupportTicketStatus.OPEN).count()
+    resolved_tickets = all_tickets.filter(status=SupportTicketStatus.RESOLVED).count()
+    closed_tickets = all_tickets.filter(status=SupportTicketStatus.CLOSED).count()
+    
+    # Start with all tickets for filtering
     if is_admin_or_board(request.user):
         tickets = SupportTicket.objects.all()
     else:
         tickets = SupportTicket.objects.filter(user=request.user)
     
     # Apply filters
-    search = request.GET.get('search', '')
-    date_range_str = request.GET.get('date_range', '')
-    status = request.GET.get('status', '')
+    search = request.GET.get('search', '').strip()
+    date_range_str = request.GET.get('date_range', '').strip()
+    status = request.GET.get('status', '').strip()
     
     # Apply text search
     if search:
         tickets = apply_text_search(tickets, search, ['subject', 'message', 'user__name', 'user__phone'])
     
-    # Parse date range
+    # Parse date range - only apply if explicitly set by user
     start_date, end_date = None, None
     if date_range_str:
         date_range = parse_date_range(date_range_str)
         if date_range:
             start_date, end_date = date_range
-    else:
-        # Default to last 1 month
-        start_date, end_date = get_default_date_range()
-        date_range_str = format_date_range(start_date, end_date)
-    
-    # Apply date filter
-    tickets = apply_date_filter(tickets, 'created_at', start_date, end_date)
+            # Apply date filter using __date lookup (handles timezone automatically)
+            if start_date:
+                tickets = tickets.filter(created_at__date__gte=start_date)
+            if end_date:
+                tickets = tickets.filter(created_at__date__lte=end_date)
     
     # Apply status filter
     if status:
@@ -51,13 +63,6 @@ def support_ticket_list(request):
     
     # Order by
     tickets = tickets.order_by('-created_at')
-    
-    # Calculate stats
-    total_tickets = tickets.count()
-    pending_tickets = tickets.filter(status=SupportTicketStatus.PENDING).count()
-    open_tickets = tickets.filter(status=SupportTicketStatus.OPEN).count()
-    resolved_tickets = tickets.filter(status=SupportTicketStatus.RESOLVED).count()
-    closed_tickets = tickets.filter(status=SupportTicketStatus.CLOSED).count()
     
     context = {
         'tickets': tickets,
@@ -70,7 +75,7 @@ def support_ticket_list(request):
         },
         'filters': {
             'search': search,
-            'date_range': date_range_str,
+            'date_range': date_range_str or '',  # Ensure empty string if None
             'status': status,
         },
         'all_statuses': SupportTicketStatus.choices,
