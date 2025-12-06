@@ -14,7 +14,7 @@ def mysetting_detail_api(request):
     # Allow all authenticated users to view settings
     # This allows members to calculate "My Share" = system_balance / total_users
     settings = MySetting.get_settings()
-    serializer = MySettingSerializer(settings)
+    serializer = MySettingSerializer(settings, context={'request': request})
     return Response(serializer.data, status=status.HTTP_200_OK)
 
 
@@ -42,9 +42,9 @@ def mysetting_update_api(request):
         )
     
     settings = MySetting.get_settings()
-    serializer = MySettingSerializer(settings, data=request.data, partial=True)
+    serializer = MySettingSerializer(settings, data=request.data, partial=True, context={'request': request})
     if serializer.is_valid():
         settings = serializer.save()
-        return Response(MySettingSerializer(settings).data, status=status.HTTP_200_OK)
+        return Response(MySettingSerializer(settings, context={'request': request}).data, status=status.HTTP_200_OK)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 

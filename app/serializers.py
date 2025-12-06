@@ -264,14 +264,27 @@ class OrganizationalWithdrawalSerializer(serializers.ModelSerializer):
 
 
 class MySettingSerializer(serializers.ModelSerializer):
+    apk_url = serializers.SerializerMethodField()
+    
     class Meta:
         model = MySetting
         fields = [
             'id', 'membership_deposit_date', 'loan_interest_payment_date',
             'loan_interest_rate', 'loan_timeline', 'balance',
-            'created_at', 'updated_at'
+            'latest_app_version', 'latest_version_code', 'apk_file',
+            'update_message', 'release_notes', 'mandatory_update',
+            'apk_url', 'created_at', 'updated_at'
         ]
-        read_only_fields = ['id', 'created_at', 'updated_at']
+        read_only_fields = ['id', 'created_at', 'updated_at', 'apk_url']
+    
+    def get_apk_url(self, obj):
+        """Return full URL for APK file if it exists"""
+        if obj.apk_file and hasattr(obj.apk_file, 'url'):
+            request = self.context.get('request')
+            if request:
+                return request.build_absolute_uri(obj.apk_file.url)
+            return obj.apk_file.url
+        return None
 
 
 class PaymentTransactionSerializer(serializers.ModelSerializer):

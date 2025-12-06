@@ -40,6 +40,8 @@ from app.views.api import (
     support_ticket_create_api,
     support_ticket_detail_api,
     support_ticket_reply_api,
+    # App Update
+    check_update_api,
 )
 
 urlpatterns = [
@@ -141,4 +143,7 @@ urlpatterns = [
     path('support-tickets/create/', support_ticket_create_api, name='api_support_ticket_create'),
     path('support-tickets/<int:pk>/', support_ticket_detail_api, name='api_support_ticket_detail'),
     path('support-tickets/<int:pk>/replies/', support_ticket_reply_api, name='api_support_ticket_reply'),
+    
+    # App Update
+    path('app/check-update/', check_update_api, name='api_check_update'),
 ]

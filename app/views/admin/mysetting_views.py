@@ -31,7 +31,7 @@ def mysetting_update(request):
     settings = MySetting.get_settings()
     
     if request.method == 'POST':
-        form = MySettingForm(request.POST, instance=settings)
+        form = MySettingForm(request.POST, request.FILES, instance=settings)
         if form.is_valid():
             obj = form.save()
             messages.success(request, 'Settings updated successfully.')

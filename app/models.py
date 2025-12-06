@@ -477,6 +477,41 @@ class MySetting(TimeStampedModel):
         decimal_places=2,
         default=Decimal('0.00')
     )
+    
+    # App Update Management Fields
+    latest_app_version = models.CharField(
+        max_length=20,
+        blank=True,
+        null=True,
+        help_text='Latest app version name (e.g., "1.0.1")',
+        default='1.0.0'
+    )
+    latest_version_code = models.IntegerField(
+        help_text='Latest app version code (e.g., 1, 2, 3...)',
+        default=1
+    )
+    apk_file = models.FileField(
+        upload_to='apk/',
+        blank=True,
+        null=True,
+        help_text='Upload APK file for app updates'
+    )
+    update_message = models.TextField(
+        blank=True,
+        null=True,
+        help_text='Message shown to users when update is available',
+        default='A new version is available with bug fixes and improvements.'
+    )
+    release_notes = models.TextField(
+        blank=True,
+        null=True,
+        help_text='Release notes describing what\'s new in the update',
+        default='Bug fixes and performance improvements'
+    )
+    mandatory_update = models.BooleanField(
+        default=False,
+        help_text='Mark this update as mandatory (users cannot skip)'
+    )
 
     class Meta:
         verbose_name = 'My Setting'

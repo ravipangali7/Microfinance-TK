@@ -363,7 +363,9 @@ class MySettingForm(forms.ModelForm):
         model = MySetting
         fields = [
             'membership_deposit_date', 'loan_interest_payment_date',
-            'loan_interest_rate', 'loan_timeline', 'balance'
+            'loan_interest_rate', 'loan_timeline', 'balance',
+            'latest_app_version', 'latest_version_code', 'apk_file',
+            'update_message', 'release_notes', 'mandatory_update'
         ]
         widgets = {
             'membership_deposit_date': forms.NumberInput(attrs={'class': 'form-control', 'min': 1, 'max': 31}),
@@ -371,6 +373,12 @@ class MySettingForm(forms.ModelForm):
             'loan_interest_rate': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
             'loan_timeline': forms.NumberInput(attrs={'class': 'form-control'}),
             'balance': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
+            'latest_app_version': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'e.g., 1.0.1'}),
+            'latest_version_code': forms.NumberInput(attrs={'class': 'form-control', 'min': 1}),
+            'apk_file': forms.FileInput(attrs={'class': 'form-control', 'accept': '.apk'}),
+            'update_message': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+            'release_notes': forms.Textarea(attrs={'class': 'form-control', 'rows': 4}),
+            'mandatory_update': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         }
     
     def clean(self):

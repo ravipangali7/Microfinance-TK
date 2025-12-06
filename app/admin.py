@@ -198,8 +198,20 @@ class OrganizationalWithdrawalAdmin(admin.ModelAdmin):
 
 @admin.register(MySetting)
 class MySettingAdmin(admin.ModelAdmin):
-    list_display = ['membership_deposit_date', 'loan_interest_payment_date', 'loan_interest_rate', 'loan_timeline', 'balance']
+    list_display = ['membership_deposit_date', 'loan_interest_payment_date', 'loan_interest_rate', 'loan_timeline', 'balance', 'latest_app_version', 'latest_version_code']
     readonly_fields = ['created_at', 'updated_at']
+    fieldsets = (
+        ('System Settings', {
+            'fields': ('membership_deposit_date', 'loan_interest_payment_date', 'loan_interest_rate', 'loan_timeline', 'balance')
+        }),
+        ('App Update Settings', {
+            'fields': ('latest_app_version', 'latest_version_code', 'apk_file', 'update_message', 'release_notes', 'mandatory_update')
+        }),
+        ('Timestamps', {
+            'fields': ('created_at', 'updated_at'),
+            'classes': ('collapse',)
+        }),
+    )
     
     def has_add_permission(self, request):
         # Only allow one instance

@@ -11,7 +11,7 @@
                     <h5 class="card-title mb-0">Settings Information</h5>
                 </div>
                 <div class="card-body">
-                    <form method="post">
+                    <form method="post" enctype="multipart/form-data">
                         {% csrf_token %}
                         <div class="row">
                             <div class="col-md-6 mb-3">
@@ -56,6 +56,85 @@
                                 {% endif %}
                             </div>
                         </div>
+                        
+                        <hr class="my-4">
+                        <h5 class="mb-3">App Update Settings</h5>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Latest App Version</label>
+                                {{ form.latest_app_version }}
+                                {% if form.latest_app_version.errors %}
+                                    <div class="text-danger">{{ form.latest_app_version.errors }}</div>
+                                {% endif %}
+                                <small class="form-text text-muted">e.g., 1.0.1</small>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Latest Version Code</label>
+                                {{ form.latest_version_code }}
+                                {% if form.latest_version_code.errors %}
+                                    <div class="text-danger">{{ form.latest_version_code.errors }}</div>
+                                {% endif %}
+                                <small class="form-text text-muted">Integer value (e.g., 1, 2, 3...)</small>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-12 mb-3">
+                                <label class="form-label">APK File</label>
+                                {{ form.apk_file }}
+                                {% if form.apk_file.errors %}
+                                    <div class="text-danger">{{ form.apk_file.errors }}</div>
+                                {% endif %}
+                                {% if obj.apk_file %}
+                                    <div class="mt-2">
+                                        <small class="text-muted">Current APK: </small>
+                                        <a href="{{ obj.apk_file.url }}" target="_blank" class="text-primary">
+                                            {{ obj.apk_file.name|default:"Download APK" }}
+                                        </a>
+                                    </div>
+                                {% endif %}
+                                <small class="form-text text-muted">Upload new APK file for app updates</small>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-12 mb-3">
+                                <label class="form-label">Update Message</label>
+                                {{ form.update_message }}
+                                {% if form.update_message.errors %}
+                                    <div class="text-danger">{{ form.update_message.errors }}</div>
+                                {% endif %}
+                                <small class="form-text text-muted">Message shown to users when update is available</small>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-12 mb-3">
+                                <label class="form-label">Release Notes</label>
+                                {{ form.release_notes }}
+                                {% if form.release_notes.errors %}
+                                    <div class="text-danger">{{ form.release_notes.errors }}</div>
+                                {% endif %}
+                                <small class="form-text text-muted">Describe what's new in this update</small>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-12 mb-3">
+                                <div class="form-check">
+                                    {{ form.mandatory_update }}
+                                    <label class="form-check-label" for="{{ form.mandatory_update.id_for_label }}">
+                                        Mandatory Update
+                                    </label>
+                                </div>
+                                {% if form.mandatory_update.errors %}
+                                    <div class="text-danger">{{ form.mandatory_update.errors }}</div>
+                                {% endif %}
+                                <small class="form-text text-muted">If checked, users cannot skip this update</small>
+                            </div>
+                        </div>
+                        
                         <div class="mt-3">
                             <button type="submit" class="btn btn-primary">Update Settings</button>
                             <a href="{% url 'mysetting_view' %}" class="btn btn-secondary">Cancel</a>

@@ -59,6 +59,7 @@ from .support_ticket_api_views import (
     support_ticket_detail_api,
     support_ticket_reply_api,
 )
+from .update_api_views import check_update_api
 
 __all__ = [
     'login_api', 'logout_api', 'current_user_api',
@@ -84,4 +85,5 @@ __all__ = [
     'support_ticket_create_api',
     'support_ticket_detail_api',
     'support_ticket_reply_api',
+    'check_update_api',
 ]
