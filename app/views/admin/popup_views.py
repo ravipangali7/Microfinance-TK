@@ -7,8 +7,8 @@ from app.models import Popup
 from app.forms import PopupForm
 from .helpers import is_admin, get_role_context
 from .filter_helpers import (
-    get_default_date_range, parse_date_range, format_date_range,
-    apply_date_filter, apply_text_search
+    parse_date_range, format_date_range,
+    apply_text_search
 )
 
 
@@ -40,22 +40,17 @@ def popup_list(request):
     if search:
         popups = apply_text_search(popups, search, ['title', 'description'])
     
-    # Parse date range
+    # Parse date range - only apply if explicitly set by user
     start_date, end_date = None, None
     if date_range_str:
         date_range = parse_date_range(date_range_str)
         if date_range:
             start_date, end_date = date_range
-    else:
-        # Default to last 1 month
-        start_date, end_date = get_default_date_range()
-        date_range_str = format_date_range(start_date, end_date)
-    
-    # Apply date filter - use __date lookup to compare only date part (includes full day)
-    if start_date:
-        popups = popups.filter(created_at__date__gte=start_date)
-    if end_date:
-        popups = popups.filter(created_at__date__lte=end_date)
+            # Apply date filter using __date lookup (handles timezone automatically)
+            if start_date:
+                popups = popups.filter(created_at__date__gte=start_date)
+            if end_date:
+                popups = popups.filter(created_at__date__lte=end_date)
     
     # Apply is_active filter
     if is_active == 'true':
