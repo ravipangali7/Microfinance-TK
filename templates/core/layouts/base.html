@@ -83,18 +83,85 @@
     <script src="/static/core/js/app.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
+        // Safe Feather icons replacement that handles invalid icon names gracefully
+        function safeFeatherReplace() {
+            if (typeof feather === 'undefined') {
+                return false;
+            }
+
+            // First, try the standard replace method
+            try {
+                feather.replace();
+                return true;
+            } catch (error) {
+                // If standard replace fails, process icons individually
+                console.warn('Standard feather.replace() failed, processing icons individually:', error);
+                
+                const iconElements = document.querySelectorAll('[data-feather]:not(svg)');
+                let successCount = 0;
+                let errorCount = 0;
+                const invalidIcons = [];
+
+                iconElements.forEach(function(element) {
+                    const iconName = element.getAttribute('data-feather');
+                    if (!iconName) {
+                        return;
+                    }
+
+                    // Check if icon exists in feather.icons
+                    if (feather.icons && feather.icons[iconName]) {
+                        try {
+                            // Get attributes to preserve
+                            const width = element.getAttribute('width') || element.style.width || '24';
+                            const height = element.getAttribute('height') || element.style.height || '24';
+                            const classes = element.getAttribute('class') || '';
+                            
+                            // Replace this specific icon
+                            const svg = feather.icons[iconName].toSvg({
+                                width: width,
+                                height: height,
+                                class: classes
+                            });
+                            element.outerHTML = svg;
+                            successCount++;
+                        } catch (iconError) {
+                            console.warn('Error rendering icon "' + iconName + '":', iconError);
+                            invalidIcons.push(iconName);
+                            errorCount++;
+                            // Remove data-feather to prevent retry
+                            element.removeAttribute('data-feather');
+                        }
+                    } else {
+                        console.warn('Invalid Feather icon name: "' + iconName + '"');
+                        invalidIcons.push(iconName);
+                        errorCount++;
+                        // Remove data-feather to prevent retry
+                        element.removeAttribute('data-feather');
+                    }
+                });
+
+                if (successCount > 0) {
+                    console.log('Feather icons initialized: ' + successCount + ' icons rendered successfully');
+                }
+                if (errorCount > 0) {
+                    console.warn('Feather icons: ' + errorCount + ' invalid icon(s) skipped: ' + invalidIcons.join(', '));
+                }
+
+                return successCount > 0;
+            }
+        }
+
         // Initialize Feather icons globally for sidebar and all pages
         function initializeFeatherIcons() {
             if (typeof feather !== 'undefined') {
                 try {
-                    feather.replace();
-                    console.log('Feather icons initialized successfully');
+                    safeFeatherReplace();
                 } catch (error) {
                     console.error('Error initializing Feather icons:', error);
                     // Retry after a short delay
                     setTimeout(function() {
                         if (typeof feather !== 'undefined') {
-                            feather.replace();
+                            safeFeatherReplace();
                         }
                     }, 100);
                 }
@@ -117,7 +184,7 @@
                     document.querySelectorAll('[data-bs-toggle="dropdown"]').forEach(function(dropdown) {
                         dropdown.addEventListener('shown.bs.dropdown', function() {
                             if (typeof feather !== 'undefined') {
-                                feather.replace();
+                                safeFeatherReplace();
                             }
                         });
                     });
@@ -126,7 +193,7 @@
                     document.querySelectorAll('.modal').forEach(function(modal) {
                         modal.addEventListener('shown.bs.modal', function() {
                             if (typeof feather !== 'undefined') {
-                                feather.replace();
+                                safeFeatherReplace();
                             }
                         });
                     });
@@ -139,7 +206,7 @@
                 sidebarToggle.addEventListener('click', function() {
                     setTimeout(function() {
                         if (typeof feather !== 'undefined') {
-                            feather.replace();
+                            safeFeatherReplace();
                         }
                     }, 100);
                 });
@@ -164,7 +231,7 @@
                 });
                 if (shouldReinitialize && typeof feather !== 'undefined') {
                     setTimeout(function() {
-                        feather.replace();
+                        safeFeatherReplace();
                     }, 50);
                 }
             });
@@ -179,12 +246,13 @@
         // Also initialize on window load as fallback
         window.addEventListener('load', function() {
             if (typeof feather !== 'undefined') {
-                feather.replace();
+                safeFeatherReplace();
             }
         });
 
-        // Make initializeFeatherIcons available globally for re-initialization
+        // Make functions available globally for re-initialization
         window.initializeFeatherIcons = initializeFeatherIcons;
+        window.safeFeatherReplace = safeFeatherReplace;
     </script>
     {% block extra_js %}{% endblock %}
 

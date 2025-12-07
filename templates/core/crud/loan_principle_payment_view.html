@@ -13,7 +13,7 @@
         <div>
             {% if is_admin_board_or_staff %}
             <a href="{% url 'loan_principle_payment_update' obj.pk %}" class="btn btn-primary">
-                <i class="align-middle me-1" data-feather="edit-2"></i> Edit Payment
+                <i class="align-middle me-1" data-feather="edit"></i> Edit Payment
             </a>
             {% endif %}
             <a href="{% url 'loan_principle_payment_list' %}" class="btn btn-secondary">
