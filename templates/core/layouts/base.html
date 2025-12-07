@@ -79,16 +79,112 @@
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/feather-icons@4.29.0/dist/feather.min.js"></script>
     <script src="/static/core/js/app.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
         // Initialize Feather icons globally for sidebar and all pages
+        function initializeFeatherIcons() {
+            if (typeof feather !== 'undefined') {
+                try {
+                    feather.replace();
+                    console.log('Feather icons initialized successfully');
+                } catch (error) {
+                    console.error('Error initializing Feather icons:', error);
+                    // Retry after a short delay
+                    setTimeout(function() {
+                        if (typeof feather !== 'undefined') {
+                            feather.replace();
+                        }
+                    }, 100);
+                }
+            } else {
+                console.warn('Feather icons library not loaded');
+                // Retry initialization after scripts load
+                setTimeout(initializeFeatherIcons, 100);
+            }
+        }
+
+        // Initialize on DOMContentLoaded
         document.addEventListener('DOMContentLoaded', function() {
+            initializeFeatherIcons();
+
+            // Re-initialize icons when Bootstrap dropdowns are shown
+            // Wait a bit for Bootstrap to be available
+            setTimeout(function() {
+                if (typeof bootstrap !== 'undefined') {
+                    // Re-initialize icons when dropdowns are shown
+                    document.querySelectorAll('[data-bs-toggle="dropdown"]').forEach(function(dropdown) {
+                        dropdown.addEventListener('shown.bs.dropdown', function() {
+                            if (typeof feather !== 'undefined') {
+                                feather.replace();
+                            }
+                        });
+                    });
+
+                    // Re-initialize icons when modals are shown
+                    document.querySelectorAll('.modal').forEach(function(modal) {
+                        modal.addEventListener('shown.bs.modal', function() {
+                            if (typeof feather !== 'undefined') {
+                                feather.replace();
+                            }
+                        });
+                    });
+                }
+            }, 100);
+
+            // Re-initialize icons when sidebar is toggled (if applicable)
+            const sidebarToggle = document.querySelector('.js-sidebar-toggle');
+            if (sidebarToggle) {
+                sidebarToggle.addEventListener('click', function() {
+                    setTimeout(function() {
+                        if (typeof feather !== 'undefined') {
+                            feather.replace();
+                        }
+                    }, 100);
+                });
+            }
+
+            // Re-initialize icons after AJAX content loads (MutationObserver)
+            const observer = new MutationObserver(function(mutations) {
+                let shouldReinitialize = false;
+                mutations.forEach(function(mutation) {
+                    if (mutation.addedNodes.length > 0) {
+                        mutation.addedNodes.forEach(function(node) {
+                            if (node.nodeType === 1) { // Element node
+                                if (node.querySelector && node.querySelector('[data-feather]')) {
+                                    shouldReinitialize = true;
+                                }
+                                if (node.hasAttribute && node.hasAttribute('data-feather')) {
+                                    shouldReinitialize = true;
+                                }
+                            }
+                        });
+                    }
+                });
+                if (shouldReinitialize && typeof feather !== 'undefined') {
+                    setTimeout(function() {
+                        feather.replace();
+                    }, 50);
+                }
+            });
+
+            // Observe changes to the document body
+            observer.observe(document.body, {
+                childList: true,
+                subtree: true
+            });
+        });
+
+        // Also initialize on window load as fallback
+        window.addEventListener('load', function() {
             if (typeof feather !== 'undefined') {
                 feather.replace();
             }
         });
+
+        // Make initializeFeatherIcons available globally for re-initialization
+        window.initializeFeatherIcons = initializeFeatherIcons;
     </script>
     {% block extra_js %}{% endblock %}
 
