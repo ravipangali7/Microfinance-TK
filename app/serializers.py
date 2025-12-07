@@ -374,6 +374,7 @@ class SupportTicketReplySerializer(serializers.ModelSerializer):
     user = UserSerializer(read_only=True)
     user_id = serializers.IntegerField(write_only=True, required=False)
     image_url = serializers.SerializerMethodField()
+    message = serializers.CharField(required=False, allow_blank=True, allow_null=True)
     
     class Meta:
         model = SupportTicketReply
@@ -391,6 +392,23 @@ class SupportTicketReplySerializer(serializers.ModelSerializer):
                 return request.build_absolute_uri(obj.image.url)
             return obj.image.url
         return None
+    
+    def validate(self, data):
+        """Validate that either message or image is provided"""
+        message = data.get('message', '').strip() if data.get('message') else ''
+        image = data.get('image')
+        
+        # Check if both message and image are empty
+        if not message and not image:
+            raise serializers.ValidationError({
+                'non_field_errors': ['Either message or image must be provided.']
+            })
+        
+        # Normalize empty string message to None
+        if message == '':
+            data['message'] = None
+        
+        return data
     
     def create(self, validated_data):
         # Auto-set user_id from request if not provided

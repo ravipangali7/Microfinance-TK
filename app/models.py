@@ -823,7 +823,7 @@ class SupportTicket(TimeStampedModel):
 class SupportTicketReply(TimeStampedModel):
     ticket = models.ForeignKey(SupportTicket, on_delete=models.CASCADE, related_name='replies')
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='support_ticket_replies')
-    message = models.TextField()
+    message = models.TextField(blank=True, null=True)
     image = models.ImageField(upload_to='support_tickets/', blank=True, null=True)
     
     class Meta:

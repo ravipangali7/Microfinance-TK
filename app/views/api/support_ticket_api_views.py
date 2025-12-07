@@ -104,7 +104,13 @@ def support_ticket_reply_api(request, pk):
         if request.data:
             # Get text fields from request.data
             if 'message' in request.data:
-                data['message'] = request.data['message']
+                message = request.data['message']
+                # Normalize empty string to None
+                if message and isinstance(message, str) and message.strip():
+                    data['message'] = message.strip()
+                # If message is empty string or None, don't include it (allow None)
+                elif message is not None and message != '':
+                    data['message'] = message
         
         data['ticket'] = ticket.id
         data['user_id'] = request.user.id
