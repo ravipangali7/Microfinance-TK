@@ -1,9 +1,10 @@
 """
 Helper functions for filtering list views
 """
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, timedelta, time
 from calendar import monthrange
 from django.db.models import Q
+from django.utils import timezone
 from decimal import Decimal
 
 
@@ -77,11 +78,87 @@ def apply_text_search(queryset, search_term, search_fields):
 def apply_date_filter(queryset, date_field, start_date=None, end_date=None):
     """
     Apply date range filter to queryset
+    
+    For datetime fields:
+    - Start date: 00:00:00 (beginning of day)
+    - End date: 23:59:59.999999 (end of day)
+    
+    For date fields:
+    - Uses date comparison directly (no time component)
+    
+    Args:
+        queryset: Django queryset to filter
+        date_field: Name of the field to filter on
+        start_date: Start date (date object)
+        end_date: End date (date object)
+    
+    Returns:
+        Filtered queryset
     """
+    if not start_date and not end_date:
+        return queryset
+    
+    # Get the model from queryset to check field type
+    model = queryset.model
+    field = None
+    
+    # Handle related field lookups (e.g., 'user__created_at')
+    field_parts = date_field.split('__')
+    if len(field_parts) > 1:
+        # For related fields, we'll assume datetime and convert
+        # This is a simplified approach - could be enhanced to traverse relationships
+        field_name = field_parts[-1]
+    else:
+        field_name = date_field
+    
+    # Try to get the field from the model
+    try:
+        field = model._meta.get_field(field_name)
+    except:
+        # If field not found (might be a related field or custom lookup), 
+        # assume it's a datetime field and convert dates to datetimes
+        pass
+    
+    # Determine if field is a DateTimeField
+    is_datetime_field = False
+    if field:
+        from django.db.models import DateTimeField
+        is_datetime_field = isinstance(field, DateTimeField)
+    else:
+        # If we can't determine, check if field name suggests datetime
+        # Common datetime field names: created_at, updated_at, timestamp, etc.
+        datetime_indicators = ['created_at', 'updated_at', 'timestamp', 'datetime', 'time']
+        is_datetime_field = any(indicator in field_name.lower() for indicator in datetime_indicators)
+    
+    # Apply filters with proper time handling
     if start_date:
-        queryset = queryset.filter(**{f"{date_field}__gte": start_date})
+        if is_datetime_field:
+            # Convert date to datetime at start of day (00:00:00)
+            start_datetime = datetime.combine(start_date, time.min)
+            # Make timezone-aware if USE_TZ is enabled in Django settings
+            from django.conf import settings
+            if getattr(settings, 'USE_TZ', False):
+                # Django uses timezone-aware datetimes
+                start_datetime = timezone.make_aware(start_datetime)
+            queryset = queryset.filter(**{f"{date_field}__gte": start_datetime})
+        else:
+            # Date field - use date directly
+            queryset = queryset.filter(**{f"{date_field}__gte": start_date})
+    
     if end_date:
-        queryset = queryset.filter(**{f"{date_field}__lte": end_date})
+        if is_datetime_field:
+            # Convert date to datetime at end of day (23:59:59.999999)
+            end_datetime = datetime.combine(end_date, time.max)
+            # Make timezone-aware if USE_TZ is enabled in Django settings
+            from django.conf import settings
+            if getattr(settings, 'USE_TZ', False):
+                # Django uses timezone-aware datetimes
+                end_datetime = timezone.make_aware(end_datetime)
+            queryset = queryset.filter(**{f"{date_field}__lte": end_datetime})
+        else:
+            # Date field - use date directly
+            queryset = queryset.filter(**{f"{date_field}__lte": end_date})
+    
     return queryset
 
 
