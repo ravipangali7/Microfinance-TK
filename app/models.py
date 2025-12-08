@@ -300,6 +300,46 @@ class Loan(TimeStampedModel):
         """Calculate remaining principle amount"""
         return self.principal_amount - self.get_total_paid_principle()
 
+    def get_total_paid_interest(self):
+        """Calculate total paid interest from all paid interest payments"""
+        return sum(
+            payment.amount for payment in self.interest_payments.filter(payment_status=PaymentStatus.PAID)
+        ) or Decimal('0.00')
+    
+    def get_total_interest(self):
+        """Calculate total interest amount from all interest payments"""
+        return sum(
+            payment.amount for payment in self.interest_payments.all()
+        ) or Decimal('0.00')
+    
+    def is_fully_paid(self):
+        """Check if loan is fully paid (both principle and interest)"""
+        total_paid_principle = self.get_total_paid_principle()
+        total_paid_interest = self.get_total_paid_interest()
+        
+        # Check if principle is fully paid
+        principle_fully_paid = total_paid_principle >= self.principal_amount
+        
+        # Check if interest is fully paid
+        total_interest = self.get_total_interest()
+        interest_fully_paid = total_interest > 0 and total_paid_interest >= total_interest
+        
+        # If there are no interest payments, only check principle
+        if total_interest == 0:
+            return principle_fully_paid
+        
+        return principle_fully_paid and interest_fully_paid
+    
+    def check_and_close_if_fully_paid(self):
+        """Check if loan is fully paid and automatically close it"""
+        if self.status == LoanStatus.ACTIVE and self.is_fully_paid():
+            self.status = LoanStatus.COMPLETED
+            if not self.completed_date:
+                self.completed_date = timezone.now().date()
+            self.save(update_fields=['status', 'completed_date'])
+            return True
+        return False
+
     def delete(self, *args, **kwargs):
         # Note: Loans no longer affect system balance
         super().delete(*args, **kwargs)
@@ -408,6 +448,10 @@ class LoanInterestPayment(TimeStampedModel):
                     txn_date=self.paid_date if self.paid_date else timezone.now().date(),
                     customer_name=self.loan.user.name if self.loan.user.name else None
                 )
+        
+        # Check and auto-close loan if fully paid
+        if self.payment_status == PaymentStatus.PAID:
+            self.loan.check_and_close_if_fully_paid()
 
     def get_total_penalties(self):
         """Calculate total penalties for this interest payment"""
@@ -703,6 +747,10 @@ class LoanPrinciplePayment(TimeStampedModel):
                     txn_date=self.paid_date if self.paid_date else timezone.now().date(),
                     customer_name=self.loan.user.name if self.loan.user.name else None
                 )
+        
+        # Check and auto-close loan if fully paid
+        if self.payment_status == PaymentStatus.PAID:
+            self.loan.check_and_close_if_fully_paid()
 
     def delete(self, *args, **kwargs):
         # Note: Loan principle payments no longer affect system balance
