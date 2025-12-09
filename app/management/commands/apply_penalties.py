@@ -6,7 +6,7 @@ from decimal import Decimal
 from dateutil.relativedelta import relativedelta
 from app.models import (
     MonthlyMembershipDeposit, LoanInterestPayment, MySetting,
-    PaymentStatus, Penalty, PenaltyType
+    PaymentStatus, Penalty, PenaltyType, MembershipUser
 )
 from app.services.push_notification_service import send_notification_to_user
 import logging
@@ -114,6 +114,31 @@ class Command(BaseCommand):
             due_date = deposit.date
             penalty_start_date = due_date + timedelta(days=grace_period_days)
             
+            # Get membership assignment date
+            membership_user = MembershipUser.objects.filter(
+                user=deposit.user,
+                membership=deposit.membership
+            ).first()
+            
+            if membership_user:
+                effective_start_date = max(
+                    deposit.user.joined_date,
+                    membership_user.created_at.date()
+                )
+            else:
+                # Fallback to user joined date if membership_user not found
+                effective_start_date = deposit.user.joined_date
+            
+            # Skip if penalty start date is before effective start date
+            if penalty_start_date < effective_start_date:
+                self.stdout.write(
+                    self.style.WARNING(
+                        f'  ⊘ Skipped penalty: {deposit.user.name} - Deposit #{deposit.pk} - '
+                        f'Penalty start date ({penalty_start_date}) is before effective start date ({effective_start_date})'
+                    )
+                )
+                continue
+            
             # Calculate months overdue
             months_overdue = self.calculate_months_overdue(penalty_start_date, today)
             
@@ -140,6 +165,16 @@ class Command(BaseCommand):
             for month_num in range(1, months_overdue + 1):
                 # Calculate due date for this penalty (same day, next month)
                 penalty_due_date = first_penalty_due_date + relativedelta(months=month_num - 1)
+                
+                # Skip penalty if due date is before effective start date
+                if penalty_due_date < effective_start_date:
+                    self.stdout.write(
+                        self.style.WARNING(
+                            f'  ⊘ Skipped penalty: {deposit.user.name} - Deposit #{deposit.pk} - '
+                            f'Month {month_num} - Penalty date ({penalty_due_date}) is before effective start date ({effective_start_date})'
+                        )
+                    )
+                    continue
                 
                 # Check if penalty already exists for this year/month
                 if not force and (penalty_due_date.year, penalty_due_date.month) in existing_dates:
@@ -266,6 +301,22 @@ class Command(BaseCommand):
             
             penalty_start_date = due_date + timedelta(days=grace_period_days)
             
+            # Calculate effective start date (max of user joined date and loan applied date)
+            effective_start_date = max(
+                payment.loan.user.joined_date,
+                payment.loan.applied_date
+            )
+            
+            # Skip if penalty start date is before effective start date
+            if penalty_start_date < effective_start_date:
+                self.stdout.write(
+                    self.style.WARNING(
+                        f'  ⊘ Skipped penalty: {payment.loan.user.name} - Interest Payment #{payment.pk} - '
+                        f'Penalty start date ({penalty_start_date}) is before effective start date ({effective_start_date})'
+                    )
+                )
+                continue
+            
             # Calculate months overdue
             months_overdue = self.calculate_months_overdue(penalty_start_date, today)
             
@@ -292,6 +343,16 @@ class Command(BaseCommand):
             for month_num in range(1, months_overdue + 1):
                 # Calculate due date for this penalty (same day, next month)
                 penalty_due_date = first_penalty_due_date + relativedelta(months=month_num - 1)
+                
+                # Skip penalty if due date is before effective start date
+                if penalty_due_date < effective_start_date:
+                    self.stdout.write(
+                        self.style.WARNING(
+                            f'  ⊘ Skipped penalty: {payment.loan.user.name} - Interest Payment #{payment.pk} - '
+                            f'Month {month_num} - Penalty date ({penalty_due_date}) is before effective start date ({effective_start_date})'
+                        )
+                    )
+                    continue
                 
                 # Check if penalty already exists for this year/month
                 if not force and (penalty_due_date.year, penalty_due_date.month) in existing_dates:
