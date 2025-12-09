@@ -14,17 +14,11 @@ from app.views.admin.filter_helpers import (
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def user_list_api(request):
-    """List users with role-based filtering"""
-    # Only Admin and Board can view users list
-    if not is_admin_or_board(request.user):
-        return Response(
-            {'error': 'Access denied. Only Admin and Board members can view users.'},
-            status=status.HTTP_403_FORBIDDEN
-        )
+    """List users - all users see only themselves"""
+    # Always return only the logged-in user
+    users = User.objects.filter(id=request.user.id)
     
-    users = User.objects.all()
-    
-    # Apply search filter
+    # Apply search filter (though it will only match the logged-in user)
     search = request.query_params.get('search', '').strip()
     if search:
         users = apply_text_search(users, search, ['name', 'phone'])
@@ -75,19 +69,13 @@ def user_create_api(request):
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def user_detail_api(request, pk):
-    """Get user details"""
+    """Get user details - all users can only view their own profile"""
     user = get_object_or_404(User, pk=pk)
     
-    # Admin and Board can view any user, Members can only view themselves
-    if is_member(request.user) and request.user.id != user.id:
+    # All users can only view their own profile
+    if request.user.id != user.id:
         return Response(
             {'error': 'Access denied. You can only view your own profile.'},
-            status=status.HTTP_403_FORBIDDEN
-        )
-    
-    if not is_admin_or_board(request.user) and request.user.id != user.id:
-        return Response(
-            {'error': 'Access denied.'},
             status=status.HTTP_403_FORBIDDEN
         )
     

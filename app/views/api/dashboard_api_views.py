@@ -22,40 +22,31 @@ from app.serializers import (
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def dashboard_api(request):
-    """Dashboard API with comprehensive microfinance statistics"""
+    """Dashboard API with comprehensive microfinance statistics - all users see only their own data"""
     
     user = request.user
-    is_member_user = is_member(user)
     
     # Date ranges
     today = timezone.now().date()
     last_7_days = today - timedelta(days=7)
     last_30_days = today - timedelta(days=30)
     
-    # Base querysets - filter by user role
-    user_queryset = User.objects.all()
-    membership_deposit_queryset = MonthlyMembershipDeposit.objects.all()
-    loan_queryset = Loan.objects.all()
-    fund_management_queryset = FundManagement.objects.all()
-    interest_payment_queryset = LoanInterestPayment.objects.all()
-    
     # Get total users count (all users including all roles) - needed for My Share calculation
     total_users_all = User.objects.count()
     
-    # Filter for Member users (only own data)
-    if is_member_user:
-        user_queryset = User.objects.filter(id=user.id)
-        membership_deposit_queryset = MonthlyMembershipDeposit.objects.filter(user=user)
-        loan_queryset = Loan.objects.filter(user=user)
-        interest_payment_queryset = LoanInterestPayment.objects.filter(loan__user=user)
+    # Always filter by logged-in user
+    user_queryset = User.objects.filter(id=user.id)
+    membership_deposit_queryset = MonthlyMembershipDeposit.objects.filter(user=user)
+    loan_queryset = Loan.objects.filter(user=user)
+    fund_management_queryset = FundManagement.objects.all()  # Fund management is organizational, not user-specific
+    interest_payment_queryset = LoanInterestPayment.objects.filter(loan__user=user)
     
     # User Statistics
-    # For members, return total_users_all so they can calculate their share
-    # For admin/board/staff, return filtered count
-    total_users = total_users_all if is_member_user else user_queryset.count()
-    active_users = user_queryset.filter(status=UserStatus.ACTIVE).count() if not is_member_user else 0
-    inactive_users = user_queryset.filter(status=UserStatus.INACTIVE).count() if not is_member_user else 0
-    frozen_users = user_queryset.filter(status=UserStatus.FREEZE).count() if not is_member_user else 0
+    # Return total_users_all for "My Share" calculation
+    total_users = total_users_all
+    active_users = 0  # User-specific stats not shown
+    inactive_users = 0
+    frozen_users = 0
     
     # Get system balance from MySetting
     try:

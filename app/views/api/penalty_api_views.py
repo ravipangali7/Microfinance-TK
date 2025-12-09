@@ -16,13 +16,9 @@ from app.views.admin.filter_helpers import (
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def penalty_list_api(request):
-    """List penalties with role-based filtering"""
-    if is_member(request.user):
-        # Members can only see their own penalties
-        penalties = Penalty.objects.filter(user=request.user).select_related('user')
-    else:
-        # Admin/Board/Staff can see all penalties
-        penalties = Penalty.objects.all().select_related('user')
+    """List penalties - all users see only their own penalties"""
+    # Always filter by logged-in user
+    penalties = Penalty.objects.filter(user=request.user).select_related('user')
     
     # Apply search filter
     search = request.query_params.get('search', '').strip()
@@ -38,14 +34,6 @@ def penalty_list_api(request):
     status_filter = request.query_params.get('status', '').strip()
     if status_filter:
         penalties = penalties.filter(payment_status=status_filter)
-    
-    # Apply user filter (admin only)
-    user_id = request.query_params.get('user_id', '').strip()
-    if user_id and not is_member(request.user):
-        try:
-            penalties = penalties.filter(user_id=int(user_id))
-        except ValueError:
-            pass
     
     # Apply date range filter
     date_range_str = request.query_params.get('date_range', '').strip()
@@ -69,11 +57,11 @@ def penalty_list_api(request):
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def penalty_detail_api(request, pk):
-    """Get penalty details"""
+    """Get penalty details - all users can only see their own penalties"""
     penalty = get_object_or_404(Penalty, pk=pk)
     
-    # Members can only see their own penalties
-    if is_member(request.user) and penalty.user.id != request.user.id:
+    # All users can only see their own penalties
+    if penalty.user.id != request.user.id:
         return Response(
             {'error': 'Access denied. You can only view your own penalties.'},
             status=status.HTTP_403_FORBIDDEN
@@ -86,24 +74,15 @@ def penalty_detail_api(request, pk):
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def penalty_summary_api(request):
-    """Get penalty summary for user or payment"""
-    user_id = request.query_params.get('user_id')
+    """Get penalty summary - all users see only their own penalties"""
     penalty_type = request.query_params.get('penalty_type')
     related_object_id = request.query_params.get('related_object_id')
     
-    # Build query
-    query = Penalty.objects.filter(payment_status=PaymentStatus.PENDING)
-    
-    # Apply filters
-    if is_member(request.user):
-        # Members can only see their own penalties
-        query = query.filter(user=request.user)
-    elif user_id:
-        # Admin can filter by user
-        try:
-            query = query.filter(user_id=int(user_id))
-        except ValueError:
-            pass
+    # Build query - always filter by logged-in user
+    query = Penalty.objects.filter(
+        payment_status=PaymentStatus.PENDING,
+        user=request.user
+    )
     
     if penalty_type:
         query = query.filter(penalty_type=penalty_type)

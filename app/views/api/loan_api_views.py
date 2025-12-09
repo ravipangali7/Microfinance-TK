@@ -15,13 +15,9 @@ from app.views.admin.filter_helpers import (
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def loan_list_api(request):
-    """List loans with role-based filtering"""
-    if is_member(request.user):
-        # Members can only see their own loans
-        loans = Loan.objects.filter(user=request.user).select_related('user', 'action_by')
-    else:
-        # Admin/Board/Staff can see all loans
-        loans = Loan.objects.all().select_related('user', 'action_by')
+    """List loans - all users see only their own loans"""
+    # Always filter by logged-in user
+    loans = Loan.objects.filter(user=request.user).select_related('user', 'action_by')
     
     # Apply search filter
     search = request.query_params.get('search', '').strip()
@@ -81,11 +77,11 @@ def loan_create_api(request):
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def loan_detail_api(request, pk):
-    """Get loan details"""
+    """Get loan details - all users can only see their own loans"""
     loan = get_object_or_404(Loan, pk=pk)
     
-    # Members can only see their own loans
-    if is_member(request.user) and loan.user.id != request.user.id:
+    # All users can only see their own loans
+    if loan.user.id != request.user.id:
         return Response(
             {'error': 'Access denied. You can only view your own loans.'},
             status=status.HTTP_403_FORBIDDEN
@@ -137,8 +133,8 @@ def loan_details_api(request, pk):
     """API endpoint to get loan details with interest payment summary"""
     loan = get_object_or_404(Loan, pk=pk)
     
-    # Members can only see their own loans
-    if is_member(request.user) and loan.user.id != request.user.id:
+    # All users can only see their own loans
+    if loan.user.id != request.user.id:
         return Response(
             {'error': 'Access denied. You can only view your own loans.'},
             status=status.HTTP_403_FORBIDDEN

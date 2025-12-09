@@ -16,13 +16,9 @@ from app.views.admin.filter_helpers import (
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def monthly_membership_deposit_list_api(request):
-    """List monthly membership deposits with role-based filtering"""
-    if is_member(request.user):
-        # Members can only see their own deposits
-        deposits = MonthlyMembershipDeposit.objects.filter(user=request.user).select_related('user', 'membership')
-    else:
-        # Admin/Board/Staff can see all deposits
-        deposits = MonthlyMembershipDeposit.objects.all().select_related('user', 'membership')
+    """List monthly membership deposits - all users see only their own deposits"""
+    # Always filter by logged-in user
+    deposits = MonthlyMembershipDeposit.objects.filter(user=request.user).select_related('user', 'membership')
     
     # Apply search filter
     search = request.query_params.get('search', '').strip()
@@ -144,11 +140,11 @@ def monthly_membership_deposit_create_api(request):
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def monthly_membership_deposit_detail_api(request, pk):
-    """Get monthly membership deposit details"""
+    """Get monthly membership deposit details - all users can only see their own deposits"""
     deposit = get_object_or_404(MonthlyMembershipDeposit, pk=pk)
     
-    # Members can only see their own deposits
-    if is_member(request.user) and deposit.user.id != request.user.id:
+    # All users can only see their own deposits
+    if deposit.user.id != request.user.id:
         return Response(
             {'error': 'Access denied. You can only view your own deposits.'},
             status=status.HTTP_403_FORBIDDEN

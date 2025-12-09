@@ -12,25 +12,22 @@ from app.views.admin.helpers import is_admin_board_or_staff, is_member
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def loan_principle_payment_list_api(request):
-    """List loan principle payments with role-based filtering"""
+    """List loan principle payments - all users see only their own loan payments"""
     loan_id = request.query_params.get('loan_id', None)
     
     if loan_id:
         # Filter by loan
         loan = get_object_or_404(Loan, pk=loan_id)
-        # Check access
-        if is_member(request.user) and loan.user.id != request.user.id:
+        # Check access - all users can only see payments for their own loans
+        if loan.user.id != request.user.id:
             return Response(
                 {'error': 'Access denied. You can only view your own loan payments.'},
                 status=status.HTTP_403_FORBIDDEN
             )
         payments = LoanPrinciplePayment.objects.filter(loan=loan).select_related('loan').order_by('-paid_date', '-created_at')
-    elif is_member(request.user):
-        # Members can only see payments for their own loans
-        payments = LoanPrinciplePayment.objects.filter(loan__user=request.user).select_related('loan').order_by('-paid_date', '-created_at')
     else:
-        # Admin/Board/Staff can see all payments
-        payments = LoanPrinciplePayment.objects.all().select_related('loan').order_by('-paid_date', '-created_at')
+        # Always filter by logged-in user's loans
+        payments = LoanPrinciplePayment.objects.filter(loan__user=request.user).select_related('loan').order_by('-paid_date', '-created_at')
     
     serializer = LoanPrinciplePaymentSerializer(payments, many=True)
     return Response(serializer.data, status=status.HTTP_200_OK)
@@ -52,13 +49,12 @@ def loan_principle_payment_create_api(request):
     
     loan = get_object_or_404(Loan, pk=loan_id)
     
-    if is_member(request.user):
-        # Members can only create payments for their own loans
-        if loan.user.id != request.user.id:
-            return Response(
-                {'error': 'You can only create principle payments for your own loans.'},
-                status=status.HTTP_403_FORBIDDEN
-            )
+    # All users can only create payments for their own loans
+    if loan.user.id != request.user.id:
+        return Response(
+            {'error': 'You can only create principle payments for your own loans.'},
+            status=status.HTTP_403_FORBIDDEN
+        )
         # Ensure loan is active or approved
         if loan.status not in ['approved', 'active']:
             return Response(
@@ -118,11 +114,11 @@ def loan_principle_payment_create_api(request):
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def loan_principle_payment_detail_api(request, pk):
-    """Get loan principle payment details"""
+    """Get loan principle payment details - all users can only see their own loan payments"""
     payment = get_object_or_404(LoanPrinciplePayment, pk=pk)
     
-    # Members can only see payments for their own loans
-    if is_member(request.user) and payment.loan.user.id != request.user.id:
+    # All users can only see payments for their own loans
+    if payment.loan.user.id != request.user.id:
         return Response(
             {'error': 'Access denied. You can only view your own loan payments.'},
             status=status.HTTP_403_FORBIDDEN

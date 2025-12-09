@@ -14,13 +14,9 @@ from app.views.admin.filter_helpers import (
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def payment_transaction_list_api(request):
-    """List payment transactions with role-based filtering"""
-    if is_member(request.user):
-        # Members can only see their own transactions
-        transactions = PaymentTransaction.objects.filter(user=request.user).select_related('user')
-    else:
-        # Admin/Board/Staff can see all transactions
-        transactions = PaymentTransaction.objects.all().select_related('user')
+    """List payment transactions - all users see only their own transactions"""
+    # Always filter by logged-in user
+    transactions = PaymentTransaction.objects.filter(user=request.user).select_related('user')
     
     # Apply search filter
     search = request.query_params.get('search', '').strip()
@@ -54,22 +50,17 @@ def payment_transaction_list_api(request):
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def payment_transaction_detail_api(request, pk):
-    """Get payment transaction details"""
-    # For members, filter at query level to check access before checking existence
+    """Get payment transaction details - all users can only see their own transactions"""
+    # Filter at query level to check access before checking existence
     # This prevents information leakage about transactions that don't belong to them
-    if is_member(request.user):
-        # Members can only see their own transactions
-        try:
-            transaction = PaymentTransaction.objects.filter(user=request.user, pk=pk).select_related('user').get()
-        except PaymentTransaction.DoesNotExist:
-            # Return 404 for members - transaction either doesn't exist or doesn't belong to them
-            return Response(
-                {'error': 'Payment transaction not found or you do not have access to view it.'},
-                status=status.HTTP_404_NOT_FOUND
-            )
-    else:
-        # Admin/Board/Staff can see all transactions
-        transaction = get_object_or_404(PaymentTransaction, pk=pk)
+    try:
+        transaction = PaymentTransaction.objects.filter(user=request.user, pk=pk).select_related('user').get()
+    except PaymentTransaction.DoesNotExist:
+        # Return 404 - transaction either doesn't exist or doesn't belong to them
+        return Response(
+            {'error': 'Payment transaction not found or you do not have access to view it.'},
+            status=status.HTTP_404_NOT_FOUND
+        )
     
     serializer = PaymentTransactionSerializer(transaction)
     return Response(serializer.data, status=status.HTTP_200_OK)

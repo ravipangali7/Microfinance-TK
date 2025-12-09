@@ -14,13 +14,9 @@ from app.views.admin.filter_helpers import (
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def membership_user_list_api(request):
-    """List membership-user relationships with role-based filtering"""
-    if is_member(request.user):
-        # Members can only see their own membership users
-        membership_users = MembershipUser.objects.filter(user=request.user).select_related('user', 'membership')
-    else:
-        # Admin/Board/Staff can see all membership users
-        membership_users = MembershipUser.objects.all().select_related('user', 'membership')
+    """List membership-user relationships - all users see only their own"""
+    # Always filter by logged-in user
+    membership_users = MembershipUser.objects.filter(user=request.user).select_related('user', 'membership')
     
     # Apply search filter
     search = request.query_params.get('search', '').strip()
@@ -68,11 +64,11 @@ def membership_user_create_api(request):
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def membership_user_detail_api(request, pk):
-    """Get membership-user relationship details"""
+    """Get membership-user relationship details - all users can only see their own"""
     membership_user = get_object_or_404(MembershipUser, pk=pk)
     
-    # Members can only see their own membership users
-    if is_member(request.user) and membership_user.user.id != request.user.id:
+    # All users can only see their own membership users
+    if membership_user.user.id != request.user.id:
         return Response(
             {'error': 'Access denied. You can only view your own memberships.'},
             status=status.HTTP_403_FORBIDDEN

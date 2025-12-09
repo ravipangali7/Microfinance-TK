@@ -16,25 +16,22 @@ from app.views.admin.filter_helpers import (
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def loan_interest_payment_list_api(request):
-    """List loan interest payments with role-based filtering"""
+    """List loan interest payments - all users see only their own loan payments"""
     loan_id = request.query_params.get('loan_id', None)
     
     if loan_id:
         # Filter by loan
         loan = get_object_or_404(Loan, pk=loan_id)
-        # Check access
-        if is_member(request.user) and loan.user.id != request.user.id:
+        # Check access - all users can only see payments for their own loans
+        if loan.user.id != request.user.id:
             return Response(
                 {'error': 'Access denied. You can only view your own loan payments.'},
                 status=status.HTTP_403_FORBIDDEN
             )
         payments = LoanInterestPayment.objects.filter(loan=loan).select_related('loan')
-    elif is_member(request.user):
-        # Members can only see payments for their own loans
-        payments = LoanInterestPayment.objects.filter(loan__user=request.user).select_related('loan')
     else:
-        # Admin/Board/Staff can see all payments
-        payments = LoanInterestPayment.objects.all().select_related('loan')
+        # Always filter by logged-in user's loans
+        payments = LoanInterestPayment.objects.filter(loan__user=request.user).select_related('loan')
     
     # Apply search filter
     search = request.query_params.get('search', '').strip()
@@ -162,11 +159,11 @@ def loan_interest_payment_create_api(request):
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def loan_interest_payment_detail_api(request, pk):
-    """Get loan interest payment details"""
+    """Get loan interest payment details - all users can only see their own loan payments"""
     payment = get_object_or_404(LoanInterestPayment, pk=pk)
     
-    # Members can only see payments for their own loans
-    if is_member(request.user) and payment.loan.user.id != request.user.id:
+    # All users can only see payments for their own loans
+    if payment.loan.user.id != request.user.id:
         return Response(
             {'error': 'Access denied. You can only view your own loan payments.'},
             status=status.HTTP_403_FORBIDDEN
